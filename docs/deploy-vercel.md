@@ -11,6 +11,7 @@
    - `DATABASE_URL`
    - `AUTH_URL`
    - `AUTH_SECRET`
+   - `AUTH_TRUST_HOST=true`
    - `GOOGLE_CLIENT_ID`
    - `GOOGLE_CLIENT_SECRET`
    - `GITHUB_CLIENT_ID`
@@ -34,6 +35,7 @@
 - Required Vercel env vars for this deployment:
   - `AUTH_URL=https://life-os-tau-five.vercel.app`
   - `AUTH_SECRET=<generated-random-secret>`
+  - `AUTH_TRUST_HOST=true`
   - `GOOGLE_CLIENT_ID=<google-oauth-client-id>`
   - `GOOGLE_CLIENT_SECRET=<google-oauth-client-secret>`
 - Google OAuth Authorized redirect URI must exactly match:
@@ -47,9 +49,14 @@
 
 ## Initializing Supabase DB
 - Use the Supabase **direct** Postgres connection string in `DATABASE_URL`.
+- Supabase URL should be direct host/port (typically `:5432`) and reachable from Vercel.
 - Run `npx prisma migrate deploy` to apply committed migrations safely.
 - Run `npx prisma generate` after deploy.
 - Never run `prisma migrate dev` against production.
+
+## DB Connectivity Check
+- Use `GET /api/health/db` for a lightweight runtime DB probe (`SELECT 1`).
+- Response `ok: false` includes `errorId` for server log correlation.
 
 ## Common failures
 - Missing `DATABASE_URL`: Prisma client initialization fails at startup/build.

@@ -29,8 +29,8 @@ const authConfig = {
   session: {
     strategy: "jwt" as const,
   },
-  // Force OAuth base URL to come from AUTH_URL/NEXTAUTH_URL, not forwarded host headers.
-  trustHost: false,
+  // Required on Vercel to trust forwarded host for Auth.js session/auth routes.
+  trustHost: true,
 };
 
 export default authConfig;
