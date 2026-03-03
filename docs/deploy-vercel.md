@@ -34,6 +34,12 @@
 - Do not run `prisma migrate dev` during production build.
 - Use `prisma migrate deploy` only for production/staging migration application.
 
+## Initializing Supabase DB
+- Use the Supabase **direct** Postgres connection string in `DATABASE_URL`.
+- Run `npx prisma migrate deploy` to apply committed migrations safely.
+- Run `npx prisma generate` after deploy.
+- Never run `prisma migrate dev` against production.
+
 ## Common failures
 - Missing `DATABASE_URL`: Prisma client initialization fails at startup/build.
 - Missing `NEXTAUTH_SECRET` (or `AUTH_SECRET`): auth/session initialization fails.
