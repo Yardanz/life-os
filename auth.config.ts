@@ -29,7 +29,8 @@ const authConfig = {
   session: {
     strategy: "jwt" as const,
   },
-  trustHost: true,
+  // Force OAuth base URL to come from AUTH_URL/NEXTAUTH_URL, not forwarded host headers.
+  trustHost: false,
 };
 
 export default authConfig;

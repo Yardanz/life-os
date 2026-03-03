@@ -9,8 +9,8 @@
 ## Vercel deploy
 1. Add required environment variables in Vercel project settings:
    - `DATABASE_URL`
-   - `NEXTAUTH_URL`
-   - `NEXTAUTH_SECRET`
+   - `AUTH_URL`
+   - `AUTH_SECRET`
    - `GOOGLE_CLIENT_ID`
    - `GOOGLE_CLIENT_SECRET`
    - `GITHUB_CLIENT_ID`
@@ -25,15 +25,15 @@
    - `SUPPORT_EMAIL`
    - `ADMIN_EMAILS` (or use `ADMIN_EMAIL` for current single-email bootstrap flow)
    - `SOFT_LAUNCH_WHITELIST`
-2. Set `NEXTAUTH_URL` to your production domain (example: `https://your-domain.com`).
+2. Set `AUTH_URL` to your production domain (example: `https://your-domain.com`) and do not add trailing slash.
 3. Run database migrations with `npx prisma migrate deploy` as a separate release step when needed.
 4. Deploy app build normally (`next build`/Vercel default build command).
 5. Set `DATABASE_URL` before production build. Prisma client generation is skipped when `DATABASE_URL` is missing.
 
 ## Google OAuth on Vercel
 - Required Vercel env vars for this deployment:
-  - `NEXTAUTH_URL=https://life-os-tau-five.vercel.app`
-  - `NEXTAUTH_SECRET=<generated-random-secret>`
+  - `AUTH_URL=https://life-os-tau-five.vercel.app`
+  - `AUTH_SECRET=<generated-random-secret>`
   - `GOOGLE_CLIENT_ID=<google-oauth-client-id>`
   - `GOOGLE_CLIENT_SECRET=<google-oauth-client-secret>`
 - Google OAuth Authorized redirect URI must exactly match:
@@ -53,5 +53,5 @@
 
 ## Common failures
 - Missing `DATABASE_URL`: Prisma client initialization fails at startup/build.
-- Missing `NEXTAUTH_SECRET` (or `AUTH_SECRET`): auth/session initialization fails.
-- OAuth callback mismatch: provider redirects fail unless callback URL matches `NEXTAUTH_URL`.
+- Missing `AUTH_SECRET` (or `NEXTAUTH_SECRET` alias): auth/session initialization fails.
+- OAuth callback mismatch: provider redirects fail unless callback URL matches `AUTH_URL`.
