@@ -1,0 +1,4 @@
+-- v4.0 Burnout Spiral model
+ALTER TABLE "BioStateSnapshot"
+ADD COLUMN "burnoutRiskIndex" DOUBLE PRECISION NOT NULL DEFAULT 15,
+ADD COLUMN "resilienceIndex" DOUBLE PRECISION NOT NULL DEFAULT 50;

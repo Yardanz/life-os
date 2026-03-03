@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: life-os-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lifeos}
+      POSTGRES_USER: ${POSTGRES_USER:-life_os_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-life_os_password}
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - life-os-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-life_os_user} -d ${POSTGRES_DB:-lifeos}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  app:
+    image: node:22-alpine
+    container_name: life-os-app
+    working_dir: /app
+    profiles: ["app"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-LIFE OS}
+      POSTGRES_DB: ${POSTGRES_DB:-lifeos}
+      POSTGRES_USER: ${POSTGRES_USER:-life_os_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-life_os_password}
+      POSTGRES_PORT: 5432
+      DATABASE_URL: postgresql://${POSTGRES_USER:-life_os_user}:${POSTGRES_PASSWORD:-life_os_password}@db:5432/${POSTGRES_DB:-lifeos}?schema=public
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app
+      - life-os-node-modules:/app/node_modules
+    command: sh -c "npm install && npm run dev -- --hostname 0.0.0.0"
+
+volumes:
+  life-os-pg-data:
+  life-os-node-modules:

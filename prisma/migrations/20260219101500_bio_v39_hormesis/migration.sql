@@ -1,0 +1,4 @@
+-- v3.9 Hormesis model
+ALTER TABLE "BioStateSnapshot"
+ADD COLUMN "hormeticSignal" DOUBLE PRECISION NOT NULL DEFAULT 20,
+ADD COLUMN "overstressSignal" DOUBLE PRECISION NOT NULL DEFAULT 10;
