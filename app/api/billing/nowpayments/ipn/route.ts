@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { BillingOrderStatus, Prisma } from "@prisma/client";
+import { Prisma, type BillingOrderStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { ApiError } from "@/lib/api/errors";
 import { grantEntitlementFromPaidOrder } from "@/lib/billing/service";
@@ -40,11 +40,11 @@ function verifySignature(payload: unknown, provided: string | null, secret: stri
 
 function mapPaymentStatus(statusRaw: string): BillingOrderStatus {
   const value = statusRaw.trim().toLowerCase();
-  if (value === "partially_paid") return BillingOrderStatus.PARTIAL;
-  if (value === "finished") return BillingOrderStatus.PAID;
-  if (value === "failed" || value === "expired") return BillingOrderStatus.FAILED;
-  if (value === "refunded") return BillingOrderStatus.REFUNDED;
-  return BillingOrderStatus.PENDING;
+  if (value === "partially_paid") return "PARTIAL";
+  if (value === "finished") return "PAID";
+  if (value === "failed" || value === "expired") return "FAILED";
+  if (value === "refunded") return "REFUNDED";
+  return "PENDING";
 }
 
 function readString(payload: Record<string, unknown>, ...keys: string[]): string | null {
@@ -127,12 +127,12 @@ export async function POST(request: Request) {
         data: {
           status: mappedStatus,
           providerInvoiceId: invoiceId ?? undefined,
-          paidAt: mappedStatus === BillingOrderStatus.PAID ? new Date() : undefined,
+          paidAt: mappedStatus === "PAID" ? new Date() : undefined,
         },
       });
     });
 
-    if (mappedStatus === BillingOrderStatus.PAID) {
+    if (mappedStatus === "PAID") {
       await grantEntitlementFromPaidOrder(order.id, new Date());
     }
 
