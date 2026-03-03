@@ -30,6 +30,17 @@
 4. Deploy app build normally (`next build`/Vercel default build command).
 5. Set `DATABASE_URL` before production build. Prisma client generation is skipped when `DATABASE_URL` is missing.
 
+## Google OAuth on Vercel
+- Required Vercel env vars for this deployment:
+  - `NEXTAUTH_URL=https://life-os-tau-five.vercel.app`
+  - `NEXTAUTH_SECRET=<generated-random-secret>`
+  - `GOOGLE_CLIENT_ID=<google-oauth-client-id>`
+  - `GOOGLE_CLIENT_SECRET=<google-oauth-client-secret>`
+- Google OAuth Authorized redirect URI must exactly match:
+  - `https://life-os-tau-five.vercel.app/api/auth/callback/google`
+- Auth route is NextAuth standard:
+  - `/api/auth/[...nextauth]`
+
 ## Migration safety
 - Do not run `prisma migrate dev` during production build.
 - Use `prisma migrate deploy` only for production/staging migration application.

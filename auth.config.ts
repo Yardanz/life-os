@@ -6,6 +6,7 @@ import Twitter from "next-auth/providers/twitter";
 const authConfig = {
   providers: [
     Google({
+      id: "google",
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
     }),
