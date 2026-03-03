@@ -28,6 +28,7 @@
 2. Set `NEXTAUTH_URL` to your production domain (example: `https://your-domain.com`).
 3. Run database migrations with `npx prisma migrate deploy` as a separate release step when needed.
 4. Deploy app build normally (`next build`/Vercel default build command).
+5. Set `DATABASE_URL` before production build. Prisma client generation is skipped when `DATABASE_URL` is missing.
 
 ## Migration safety
 - Do not run `prisma migrate dev` during production build.
