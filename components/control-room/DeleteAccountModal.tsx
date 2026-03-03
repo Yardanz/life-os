@@ -15,6 +15,7 @@ export function DeleteAccountModal({ open, onClose, onDone }: DeleteAccountModal
   const [status, setStatus] = useState<"idle" | "deleting" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string>("Account deleted.");
 
   useEffect(() => {
     if (!open) {
@@ -22,6 +23,7 @@ export function DeleteAccountModal({ open, onClose, onDone }: DeleteAccountModal
       setStatus("idle");
       setError(null);
       setErrorId(null);
+      setSuccessMessage("Account deleted.");
     }
   }, [open]);
 
@@ -33,18 +35,30 @@ export function DeleteAccountModal({ open, onClose, onDone }: DeleteAccountModal
       setStatus("deleting");
       setError(null);
       setErrorId(null);
+      setSuccessMessage("Account deleted.");
 
       const response = await fetch("/api/account/delete", { method: "POST" });
-      const payload = (await response.json()) as { ok?: boolean; error?: string; errorId?: string };
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        errorId?: string;
+        message?: string;
+        retryAfterMs?: number;
+      };
 
       if (!response.ok || !payload.ok) {
         if (payload.error === "SYSTEM_FAULT" && payload.errorId) {
           setErrorId(payload.errorId);
-          throw new Error("System fault.");
+          throw new Error(payload.message ?? "System fault.");
         }
-        throw new Error(payload.error ?? "Failed to delete account.");
+        if (payload.error === "RATE_LIMITED") {
+          const retrySec = Math.max(1, Math.round((payload.retryAfterMs ?? 0) / 1000));
+          throw new Error(`Rate limited. Try again in ~${retrySec}s.`);
+        }
+        throw new Error(payload.message ?? payload.error ?? "Failed to delete account.");
       }
 
+      setSuccessMessage(payload.message ?? "Account deleted.");
       setStatus("done");
       window.setTimeout(() => {
         requestClose(() => {
@@ -104,7 +118,7 @@ export function DeleteAccountModal({ open, onClose, onDone }: DeleteAccountModal
 
           {status === "done" ? (
             <p className="rounded-md border border-emerald-500/40 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200">
-              Account deleted.
+              {successMessage}
             </p>
           ) : null}
 

@@ -25,6 +25,8 @@ export type ResetUserDataResult = {
   scenarioSnapshots: number;
   protocolRuns: number;
   systemSnapshots: number;
+  billingPaymentEvents: number;
+  billingOrders: number;
 };
 
 export type DeleteAccountResult = {
@@ -39,6 +41,12 @@ export type DeleteAccountResult = {
   scenarioSnapshots: number;
   protocolRuns: number;
   systemSnapshots: number;
+  billingPaymentEvents: number;
+  billingOrders: number;
+  entitlements: number;
+  sessions: number;
+  accounts: number;
+  verificationTokens: number;
   accountDeleted: boolean;
 };
 
@@ -117,6 +125,8 @@ export async function resetUserData(userId: string): Promise<ResetUserDataResult
       scenarioSnapshots,
       protocolRuns,
       systemSnapshots,
+      billingPaymentEvents,
+      billingOrders,
     ] = await Promise.all([
       tx.dailyCheckIn.deleteMany({ where: { userId } }),
       tx.statContribution.deleteMany({ where: { userId } }),
@@ -129,6 +139,8 @@ export async function resetUserData(userId: string): Promise<ResetUserDataResult
       tx.scenarioSnapshot.deleteMany({ where: { userId } }),
       tx.protocolRun.deleteMany({ where: { userId } }),
       tx.systemSnapshot.deleteMany({ where: { userId } }),
+      tx.billingPaymentEvent.deleteMany({ where: { order: { userId } } }),
+      tx.billingOrder.deleteMany({ where: { userId } }),
     ]);
 
     await tx.user.update({
@@ -154,6 +166,8 @@ export async function resetUserData(userId: string): Promise<ResetUserDataResult
       scenarioSnapshots: scenarioSnapshots.count,
       protocolRuns: protocolRuns.count,
       systemSnapshots: systemSnapshots.count,
+      billingPaymentEvents: billingPaymentEvents.count,
+      billingOrders: billingOrders.count,
     };
   });
 
@@ -162,6 +176,14 @@ export async function resetUserData(userId: string): Promise<ResetUserDataResult
 
 export async function deleteAccountData(userId: string): Promise<DeleteAccountResult> {
   return prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+    if (!user) {
+      throw new Error("User not found for account deletion.");
+    }
+
     const [
       dailyCheckIns,
       statContributions,
@@ -174,6 +196,12 @@ export async function deleteAccountData(userId: string): Promise<DeleteAccountRe
       scenarioSnapshots,
       protocolRuns,
       systemSnapshots,
+      billingPaymentEvents,
+      entitlements,
+      billingOrders,
+      sessions,
+      accounts,
+      verificationTokens,
     ] = await Promise.all([
       tx.dailyCheckIn.deleteMany({ where: { userId } }),
       tx.statContribution.deleteMany({ where: { userId } }),
@@ -186,6 +214,16 @@ export async function deleteAccountData(userId: string): Promise<DeleteAccountRe
       tx.scenarioSnapshot.deleteMany({ where: { userId } }),
       tx.protocolRun.deleteMany({ where: { userId } }),
       tx.systemSnapshot.deleteMany({ where: { userId } }),
+      tx.billingPaymentEvent.deleteMany({ where: { order: { userId } } }),
+      tx.entitlement.deleteMany({ where: { userId } }),
+      tx.billingOrder.deleteMany({ where: { userId } }),
+      tx.session.deleteMany({ where: { userId } }),
+      tx.account.deleteMany({ where: { userId } }),
+      user.email
+        ? tx.verificationToken.deleteMany({
+            where: { identifier: user.email },
+          })
+        : Promise.resolve({ count: 0 }),
     ]);
 
     await tx.user.delete({
@@ -204,6 +242,12 @@ export async function deleteAccountData(userId: string): Promise<DeleteAccountRe
       scenarioSnapshots: scenarioSnapshots.count,
       protocolRuns: protocolRuns.count,
       systemSnapshots: systemSnapshots.count,
+      billingPaymentEvents: billingPaymentEvents.count,
+      billingOrders: billingOrders.count,
+      entitlements: entitlements.count,
+      sessions: sessions.count,
+      accounts: accounts.count,
+      verificationTokens: verificationTokens.count,
       accountDeleted: true,
     };
   });

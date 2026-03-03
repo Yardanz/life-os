@@ -14,12 +14,14 @@ export function SystemResetModal({ open, onClose, onDone }: SystemResetModalProp
   const [status, setStatus] = useState<"idle" | "resetting" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string>("System reset complete.");
 
   useEffect(() => {
     if (!open) {
       setStatus("idle");
       setError(null);
       setErrorId(null);
+      setSuccessMessage("System reset complete.");
     }
   }, [open]);
 
@@ -31,15 +33,27 @@ export function SystemResetModal({ open, onClose, onDone }: SystemResetModalProp
       setStatus("resetting");
       setError(null);
       setErrorId(null);
+      setSuccessMessage("System reset complete.");
       const response = await fetch("/api/setup/reset", { method: "POST" });
-      const payload = (await response.json()) as { ok?: boolean; error?: string; errorId?: string };
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        errorId?: string;
+        message?: string;
+        retryAfterMs?: number;
+      };
       if (!response.ok || !payload.ok) {
         if (payload.error === "SYSTEM_FAULT" && payload.errorId) {
           setErrorId(payload.errorId);
-          throw new Error("System fault.");
+          throw new Error(payload.message ?? "System fault.");
         }
-        throw new Error(payload.error ?? "Failed to reset system.");
+        if (payload.error === "RATE_LIMITED") {
+          const retrySec = Math.max(1, Math.round((payload.retryAfterMs ?? 0) / 1000));
+          throw new Error(`Rate limited. Try again in ~${retrySec}s.`);
+        }
+        throw new Error(payload.message ?? payload.error ?? "Failed to reset system.");
       }
+      setSuccessMessage(payload.message ?? "System reset complete.");
       setStatus("done");
       window.setTimeout(() => {
         requestClose(onDone);
@@ -86,7 +100,7 @@ export function SystemResetModal({ open, onClose, onDone }: SystemResetModalProp
 
           {status === "done" ? (
             <p className="rounded-md border border-emerald-500/40 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200">
-              System reset complete.
+              {successMessage}
             </p>
           ) : null}
 
