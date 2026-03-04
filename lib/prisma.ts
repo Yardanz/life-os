@@ -54,13 +54,19 @@ function validateDatabaseUrlOrThrow() {
 validateDatabaseUrlOrThrow();
 assertEnv();
 
+const databaseUrl = process.env.DATABASE_URL?.trim() ?? "";
+const isSupabasePooler = /pooler\.supabase\.com/i.test(databaseUrl);
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: databaseUrl,
   // Serverless-friendly defaults to reduce upstream pool pressure on Vercel.
   max: process.env.NODE_ENV === "production" ? 1 : 10,
   connectionTimeoutMillis: 10_000,
   idleTimeoutMillis: 10_000,
   keepAlive: true,
+  // Supabase pooler can present cert chains not trusted by default Node CA bundle in serverless envs.
+  // Keep TLS enabled but skip CA verification only for pooler host connections.
+  ssl: isSupabasePooler ? { rejectUnauthorized: false } : undefined,
 });
 const adapter = new PrismaPg(pool);
 
