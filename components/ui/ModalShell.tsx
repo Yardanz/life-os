@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 type ModalShellRenderArgs = {
   requestClose: (afterClose?: () => void) => void;
@@ -16,9 +17,17 @@ type ModalShellProps = {
 };
 
 const CLOSE_ANIMATION_MS = 180;
+const BODY_SCROLL_LOCK_KEY = "__lifeosModalScrollLock";
+
+type BodyScrollLockState = {
+  count: number;
+  previousOverflow: string;
+  previousPaddingRight: string;
+};
 
 export function ModalShell({ open, onClose, ariaLabel, panelClassName, children }: ModalShellProps) {
   const [isClosing, setIsClosing] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const panelRef = useRef<HTMLElement | null>(null);
   const restoreTargetRef = useRef<HTMLElement | null>(null);
 
@@ -36,6 +45,10 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
   );
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
     const active = document.activeElement;
     restoreTargetRef.current = active instanceof HTMLElement ? active : null;
@@ -43,18 +56,46 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
 
   useEffect(() => {
     if (!open) return;
+    const body = document.body;
+    const lockStore = window as Window & {
+      [BODY_SCROLL_LOCK_KEY]?: BodyScrollLockState;
+    };
+    const current =
+      lockStore[BODY_SCROLL_LOCK_KEY] ??
+      ({
+        count: 0,
+        previousOverflow: "",
+        previousPaddingRight: "",
+      } satisfies BodyScrollLockState);
 
-    const previousOverflow = document.body.style.overflow;
-    const previousPaddingRight = document.body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.overflow = "hidden";
-    if (scrollbarWidth > 0) {
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    if (current.count === 0) {
+      current.previousOverflow = body.style.overflow;
+      current.previousPaddingRight = body.style.paddingRight;
+
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      const existingPaddingRight = Number.parseFloat(window.getComputedStyle(body).paddingRight || "0") || 0;
+
+      body.style.overflow = "hidden";
+      if (scrollbarWidth > 0) {
+        body.style.paddingRight = `${existingPaddingRight + scrollbarWidth}px`;
+      }
     }
 
+    current.count += 1;
+    lockStore[BODY_SCROLL_LOCK_KEY] = current;
+
     return () => {
-      document.body.style.overflow = previousOverflow;
-      document.body.style.paddingRight = previousPaddingRight;
+      const active = lockStore[BODY_SCROLL_LOCK_KEY];
+      if (!active) return;
+
+      active.count = Math.max(0, active.count - 1);
+      if (active.count === 0) {
+        body.style.overflow = active.previousOverflow;
+        body.style.paddingRight = active.previousPaddingRight;
+        delete lockStore[BODY_SCROLL_LOCK_KEY];
+      } else {
+        lockStore[BODY_SCROLL_LOCK_KEY] = active;
+      }
     };
   }, [open]);
 
@@ -117,15 +158,15 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
     }
   }, [open]);
 
-  if (!open) return null;
+  if (!open || !isMounted) return null;
 
   const content =
     typeof children === "function"
       ? (children as (args: ModalShellRenderArgs) => ReactNode)({ requestClose })
       : children;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[120] flex items-center justify-center px-4">
       <button
         type="button"
         aria-label="Close modal"
@@ -147,6 +188,7 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
         <div className="pointer-events-none absolute inset-0 rounded-2xl bg-[radial-gradient(circle_at_20%_0%,rgba(34,211,238,0.12),transparent_45%),radial-gradient(circle_at_80%_20%,rgba(14,116,144,0.2),transparent_40%)]" />
         <div className="relative max-h-[90vh] overflow-y-auto">{content}</div>
       </section>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -6,10 +6,9 @@ import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { ScenarioRunner } from "@/components/demo/ScenarioRunner";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PublicNavLinks } from "@/components/public/PublicNavLinks";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { GlossaryModal } from "@/components/ui/GlossaryModal";
 import { SystemReportModal } from "@/components/ui/SystemReportModal";
-import { t, type Lang } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
 import { buildSystemReport } from "@/lib/systemReport";
 
 type ScenarioKey = "baseline" | "high_load" | "recovery";
@@ -111,7 +110,6 @@ export default function DemoPage() {
   const [isWalking, setIsWalking] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
-  const [lang, setLang] = useState<Lang>("en");
   const timeoutsRef = useRef<number[]>([]);
   const current = SCENARIOS[scenario];
 
@@ -125,12 +123,6 @@ export default function DemoPage() {
   useEffect(() => {
     return () => clearPlayback();
   }, []);
-
-  const withLang = (href: string) => {
-    const url = new URL(href, "http://localhost");
-    url.searchParams.set("lang", lang);
-    return `${url.pathname}${url.search}${url.hash}`;
-  };
 
   const reportText = buildSystemReport({
     ts: new Date().toISOString(),
@@ -173,17 +165,33 @@ export default function DemoPage() {
     <LifeOSBackground>
       <main id="main-content" className="mx-auto min-h-screen w-full max-w-6xl overflow-x-hidden px-4 py-8 text-zinc-100 sm:px-6">
         <div className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-2 text-sm text-cyan-100">
-          {t("demoModeBanner", lang)}
+          {t("demoModeBanner")}
         </div>
 
-        <header className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <header className="mt-6 mb-8 flex flex-wrap items-center justify-between gap-3">
           <div>
+            <Link
+              href="/"
+              aria-label="Go to home page"
+              title="Home"
+              className="group inline-flex cursor-pointer items-center gap-1 rounded-sm px-1 py-0.5 text-xs uppercase tracking-[0.22em] text-zinc-400 transition-all duration-200 ease-out hover:text-cyan-200 hover:underline hover:underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
+            >
+              <span
+                aria-hidden="true"
+                className="text-cyan-300/90 transition-transform duration-200 ease-out group-hover:-translate-x-0.5"
+              >
+                &larr;
+              </span>
+              <span className="font-medium text-zinc-300 transition-colors duration-200 group-hover:text-cyan-100">LIFE OS</span>
+              <span className="text-[10px] normal-case tracking-normal text-zinc-500 transition-colors duration-200 group-hover:text-cyan-200/90">
+                Home
+              </span>
+            </Link>
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">System walkthrough</p>
             <h1 className="mt-2 text-3xl font-semibold text-zinc-100 sm:text-4xl">Interactive System Preview</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <PublicNavLinks className="flex flex-wrap items-center gap-2 text-sm" />
-            <LanguageToggle onChange={setLang} />
             <button
               type="button"
               onClick={() => setGlossaryOpen(true)}
@@ -194,7 +202,7 @@ export default function DemoPage() {
           </div>
         </header>
 
-        <section className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/70 p-3">
+        <section className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-3">
           <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1">
             {(["baseline", "high_load", "recovery"] as ScenarioKey[]).map((key) => (
               <button
@@ -380,7 +388,7 @@ export default function DemoPage() {
           <h2 className="text-2xl font-semibold text-zinc-100">Enter Live System</h2>
           <div className="mt-4">
             <Link
-              href={withLang("/app")}
+              href="/app"
               className="inline-flex min-h-10 items-center rounded-md border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300"
             >
               Enter Live System

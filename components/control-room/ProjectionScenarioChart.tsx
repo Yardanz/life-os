@@ -149,7 +149,7 @@ function lineClass(value: number): string {
 }
 
 function formatBudgetValue(value: number | null | undefined): string {
-  if (typeof value !== "number" || !Number.isFinite(value)) return "вЂ”";
+  if (typeof value !== "number" || !Number.isFinite(value)) return "-";
   if (Math.abs(value - Math.round(value)) < 1e-9) return String(Math.round(value));
   return value.toFixed(1);
 }
@@ -871,7 +871,10 @@ export function ProjectionScenarioChart({
                   Workout Allowance: {formatBudgetValue(decisionBudget72h?.maxWorkoutIntensity)}
                 </div>
                 <div className="rounded-md border border-zinc-800 bg-zinc-950/80 px-3 py-2 text-zinc-200">
-                  Time to Caution: {typeof debugSafeWindow === "number" && Number.isFinite(debugSafeWindow) ? `${Math.max(0, Math.round(debugSafeWindow))}h` : "вЂ”"}
+                  Time to Caution:{" "}
+                  {typeof debugSafeWindow === "number" && Number.isFinite(debugSafeWindow)
+                    ? `${Math.max(0, Math.round(debugSafeWindow))}h`
+                    : "-"}
                 </div>
               </div>
             </section>
@@ -1004,7 +1007,7 @@ export function ProjectionScenarioChart({
                   </span>
                   <span className="text-zinc-600">|</span>
                   <span className="text-zinc-300">
-                    Guardrail drift: {compareDelta.guardrailFrom} в†’ {compareDelta.guardrailTo}
+                    Guardrail drift: {compareDelta.guardrailFrom} {"->"} {compareDelta.guardrailTo}
                   </span>
                 </div>
               ) : null}

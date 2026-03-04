@@ -17,6 +17,7 @@ import { detectPatterns, extractSeries } from "@/lib/patterns/patternDetection";
 import { computeIntegrity } from "@/lib/engine/systemIntegrity";
 import { getActiveProtocol } from "@/lib/protocol/protocolHelpers";
 import { computeDayV3 } from "@/lib/scoring/engine";
+import { startTiming } from "@/lib/observability/timing";
 import type {
   DailyCheckInInput,
   PreviousBioStateInput,
@@ -1376,15 +1377,21 @@ function resolveStatus(
 }
 
 export async function GET(request: Request) {
+  const requestTimer = startTiming("api.control-room.GET");
   try {
     const demoMode = isDemoModeRequest(request);
+    const sessionTimer = startTiming("api.control-room.auth", { demoMode });
     const session = await auth();
+    sessionTimer.end({ hasSession: Boolean(session?.user?.id) });
     const sessionUserId = session?.user?.id;
     if (!sessionUserId && !demoMode) {
+      requestTimer.end({ status: 401 });
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
     if (demoMode) {
+      const demoSeedTimer = startTiming("api.control-room.ensureLiveDemoData");
       await ensureLiveDemoData();
+      demoSeedTimer.end();
     }
     const effectiveUserId = demoMode ? LIVE_DEMO_USER_ID : (sessionUserId as string);
 
@@ -1396,7 +1403,9 @@ export async function GET(request: Request) {
       date: requestedDate,
       tzOffsetMinutes: requestedTzOffset,
     });
+    const userTimer = startTiming("api.control-room.ensureUserWithPlan", { userId: effectiveUserId });
     const user = await ensureUserWithPlan(effectiveUserId, request);
+    userTimer.end({ plan: user.plan });
     const isPro = hasOperator(user);
     const tzOffsetMinutes = clampTzOffsetMinutes(payload.tzOffsetMinutes);
     const date = payload.date ? toUtcDateOnly(payload.date) : toUtcDateOnly(getDayKeyAtOffset(new Date(), tzOffsetMinutes));
@@ -1404,6 +1413,7 @@ export async function GET(request: Request) {
     const recent7DayDates = recent7DayKeys.map(dayKeyToUtcDate);
     const recent7DayDateSet = new Set(recent7DayKeys);
 
+    const primaryQueryTimer = startTiming("api.control-room.primaryQueries", { userId: user.id });
     let snapshot = await prisma.statSnapshot.findUnique({
       where: { userId_date: { userId: user.id, date } },
       include: { contributions: true },
@@ -1454,6 +1464,12 @@ export async function GET(request: Request) {
         burnoutRiskIndex: true,
         resilienceIndex: true,
       },
+    });
+    primaryQueryTimer.end({
+      hasSnapshot: Boolean(snapshot),
+      hasCheckin: Boolean(checkin),
+      hasBioState: Boolean(bioState),
+      hasTodayCheckin: Boolean(todayCheckin?.id),
     });
 
     if (!snapshot) {
@@ -1641,6 +1657,7 @@ export async function GET(request: Request) {
       },
     });
 
+    const analyticsTimer = startTiming("api.control-room.analyticsQueries", { userId: user.id });
     const previousBioRows = await prisma.bioStateSnapshot.findMany({
       where: { userId: user.id, date: { lt: date } },
       orderBy: { date: "desc" },
@@ -1809,6 +1826,11 @@ export async function GET(request: Request) {
       userId: user.id,
       endDate: date,
       windowDays: 30,
+    });
+    analyticsTimer.end({
+      previousBioRows: previousBioRows.length,
+      previousStatRows: previousStatRows.length,
+      checkins7d: checkins7d.length,
     });
     const calibration: CalibrationPayload = {
       active: calibrationProfile.calibrationActive,
@@ -2258,6 +2280,7 @@ export async function GET(request: Request) {
 
     const resolvedStatus = resolveStatus(snapshot.systemStatus, toNumber(snapshot.lifeScore), series7d);
 
+    requestTimer.end({ status: 200 });
     return NextResponse.json(
       {
         ok: true,
@@ -2331,6 +2354,7 @@ export async function GET(request: Request) {
       { status: 200 }
     );
   } catch (error) {
+    requestTimer.end({ status: 500 });
     return errorResponse(error);
   }
 }

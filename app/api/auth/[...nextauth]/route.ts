@@ -1,5 +1,6 @@
 import { handlers } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
+import { startTiming } from "@/lib/observability/timing";
 
 export const runtime = "nodejs";
 
@@ -21,13 +22,25 @@ function validateHostOrReject(request: NextRequest): NextResponse | null {
 }
 
 export async function GET(request: NextRequest) {
+  const timer = startTiming("api.auth.GET", { path: request.nextUrl.pathname });
   const rejection = validateHostOrReject(request);
-  if (rejection) return rejection;
-  return handlers.GET(request);
+  if (rejection) {
+    timer.end({ status: rejection.status });
+    return rejection;
+  }
+  const response = await handlers.GET(request);
+  timer.end({ status: response.status });
+  return response;
 }
 
 export async function POST(request: NextRequest) {
+  const timer = startTiming("api.auth.POST", { path: request.nextUrl.pathname });
   const rejection = validateHostOrReject(request);
-  if (rejection) return rejection;
-  return handlers.POST(request);
+  if (rejection) {
+    timer.end({ status: rejection.status });
+    return rejection;
+  }
+  const response = await handlers.POST(request);
+  timer.end({ status: response.status });
+  return response;
 }

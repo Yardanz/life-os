@@ -23,7 +23,7 @@ export function AuthModal({ open, callbackUrl, mode = "signin", authError = null
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Access</p>
               <h2 className="mt-2 text-xl font-semibold text-zinc-100">
-                {mode === "signup" ? "Access Control" : "Access Control"}
+                {mode === "signup" ? "Sign in" : "Sign in"}
               </h2>
               <p className="mt-2 text-sm text-zinc-300">Authentication is required to operate the system.</p>
             </div>

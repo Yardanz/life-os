@@ -4,9 +4,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Pool } from "pg";
 import { assertEnv } from "@/lib/env";
+import { startTiming } from "@/lib/observability/timing";
+
+type PrismaSingleton = PrismaClient;
 
 const globalForPrisma = globalThis as unknown as {
-  prisma?: PrismaClient;
+  prisma?: PrismaSingleton;
 };
 
 function parseDotEnvDatabaseUrl(filePath: string): string | null {
@@ -56,6 +59,7 @@ assertEnv();
 
 const databaseUrl = process.env.DATABASE_URL?.trim() ?? "";
 const isSupabasePooler = /pooler\.supabase\.com/i.test(databaseUrl);
+const isSupabaseDirect = /(^|@)db\.[^.]+\.supabase\.co(?::\d+)?/i.test(databaseUrl);
 
 function buildPoolConnectionString(rawUrl: string, forPooler: boolean): string {
   if (!forPooler) return rawUrl;
@@ -85,12 +89,42 @@ const pool = new Pool({
 });
 const adapter = new PrismaPg(pool);
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+if (process.env.NODE_ENV === "production" && isSupabaseDirect) {
+  console.warn("[prisma] DATABASE_URL points to Supabase direct host. Prefer Session Pooler for Vercel runtime.");
+}
+
+function createPrismaClient(): PrismaSingleton {
+  const client = new PrismaClient({
     log: ["warn", "error"],
     adapter,
   });
+
+  if (process.env.PERF_TIMING_LOG === "1") {
+    return client.$extends({
+      query: {
+        user: {
+          async upsert({ query, args }) {
+            const timer = startTiming("prisma.user.upsert", {
+              whereKeys: Object.keys((args?.where ?? {}) as Record<string, unknown>).join(",") || "none",
+            });
+            try {
+              const result = await query(args);
+              timer.end({ ok: true });
+              return result;
+            } catch (error) {
+              timer.end({ ok: false, error: error instanceof Error ? error.name : "unknown" });
+              throw error;
+            }
+          },
+        },
+      },
+    }) as PrismaSingleton;
+  }
+
+  return client;
+}
+
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

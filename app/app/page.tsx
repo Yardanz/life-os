@@ -9,6 +9,7 @@ import { fetchActiveProtocol } from "@/lib/protocol/fetchActiveProtocol";
 import { ensureLiveDemoData } from "@/lib/demo/seedLiveDemo";
 import { DEMO_MODE_COOKIE, DEMO_MODE_COOKIE_VALUE, LIVE_DEMO_USER_ID } from "@/lib/demoMode";
 import { canAccessApp } from "@/lib/softLaunch";
+import { startTiming } from "@/lib/observability/timing";
 import { ControlRoomDashboard } from "@/components/control-room/ControlRoomDashboard";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 
@@ -17,8 +18,12 @@ type AppControlRoomPageProps = {
 };
 
 export default async function AppControlRoomPage({ searchParams }: AppControlRoomPageProps) {
-  const session = await auth();
-  const cookieStore = await cookies();
+  const sessionTimer = startTiming("app.page.auth");
+  const sessionPromise = auth();
+  const cookiePromise = cookies();
+  const [session, cookieStore] = await Promise.all([sessionPromise, cookiePromise]);
+  sessionTimer.end({ hasSession: Boolean(session?.user?.id) });
+
   const demoMode = cookieStore.get(DEMO_MODE_COOKIE)?.value === DEMO_MODE_COOKIE_VALUE;
   if (!session?.user?.id) {
     redirect("/signin?callbackUrl=/app");
@@ -36,7 +41,9 @@ export default async function AppControlRoomPage({ searchParams }: AppControlRoo
   }
 
   if (demoMode) {
+    const demoSeedTimer = startTiming("app.page.ensureLiveDemoData");
     await ensureLiveDemoData();
+    demoSeedTimer.end();
   }
   const effectiveUserId = demoMode ? LIVE_DEMO_USER_ID : (session?.user?.id as string);
 
@@ -44,6 +51,7 @@ export default async function AppControlRoomPage({ searchParams }: AppControlRoo
   const rawDate = Array.isArray(params.date) ? params.date[0] : params.date;
   const explicitDate = parseISODateParam(rawDate);
 
+  const bootstrapQueryTimer = startTiming("app.page.bootstrapQueries", { demoMode, userId: effectiveUserId });
   const [latestCheckin, activeProtocol] = await Promise.all([
     prisma.dailyCheckIn.findFirst({
       where: { userId: effectiveUserId },
@@ -52,6 +60,7 @@ export default async function AppControlRoomPage({ searchParams }: AppControlRoo
     }),
     fetchActiveProtocol(effectiveUserId),
   ]);
+  bootstrapQueryTimer.end({ hasLatestCheckin: Boolean(latestCheckin), hasActiveProtocol: Boolean(activeProtocol) });
 
   const latestCheckinDate = latestCheckin ? formatISODate(latestCheckin.date) : null;
   const initialSelectedDate = explicitDate ?? latestCheckinDate ?? getLocalISODate();

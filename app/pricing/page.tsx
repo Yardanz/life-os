@@ -5,7 +5,7 @@ import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PublicNavLinks } from "@/components/public/PublicNavLinks";
 import { PricingCapabilityActions } from "@/app/pricing/PricingCapabilityActions";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
+import { PageHeader } from "@/components/public/PageHeader";
 
 type CapabilityRow = {
   capability: string;
@@ -120,30 +120,25 @@ export default async function PricingPage() {
 
   return (
     <LifeOSBackground>
-      <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-10 text-zinc-100">
-        <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">Capability Specification</p>
-            <h1 className="mt-2 text-3xl font-semibold text-zinc-100 sm:text-4xl">Observer Mode vs Operator License</h1>
-            <p className="mt-2 text-sm text-zinc-400">
-              Observer Mode lets you monitor your system.
-              <br />
-              Operator License lets you simulate and plan forward impact.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <PublicNavLinks className="flex flex-wrap items-center gap-2 text-sm" />
-            <LanguageToggle />
-            {!session ? (
-              <Link
-                href="/pricing?auth=1&callbackUrl=/pricing"
-                className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-zinc-200 transition hover:border-zinc-500"
-              >
-                Access Control
-              </Link>
-            ) : null}
-          </div>
-        </header>
+      <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-10 text-zinc-100 sm:py-12">
+        <PageHeader
+          kicker="CAPABILITY SPECIFICATION"
+          title="Observer Mode vs Operator License"
+          subtitle="Observer Mode lets you monitor your system. Operator License lets you simulate and plan forward impact."
+          navSlot={
+            <>
+              <PublicNavLinks className="flex flex-wrap items-center gap-2 text-sm" />
+              {!session ? (
+                <Link
+                  href="/pricing?auth=1&callbackUrl=/pricing"
+                  className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-zinc-200 transition hover:border-zinc-500"
+                >
+                  Sign in
+                </Link>
+              ) : null}
+            </>
+          }
+        />
 
         <section className="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5">
           {CAPABILITY_SECTIONS.map((section) => (
@@ -152,26 +147,20 @@ export default async function PricingPage() {
                 <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-300">{section.title}</h2>
               </header>
               <div className="hidden md:block">
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b border-zinc-800 text-zinc-400">
-                    <tr>
-                      <th className="px-4 py-2 font-medium">Capability</th>
-                      <th className="px-4 py-2 font-medium">Description</th>
-                      <th className="px-4 py-2 font-medium">Observer Mode</th>
-                      <th className="px-4 py-2 font-medium">Operator License</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {section.rows.map((row) => (
-                      <tr key={`${section.title}-${row.capability}`} className="border-b border-zinc-800/70 last:border-b-0">
-                        <td className="px-4 py-2 text-zinc-200">{row.capability}</td>
-                        <td className="px-4 py-2 text-zinc-400">{row.description}</td>
-                        <td className="px-4 py-2 text-zinc-300">{row.free}</td>
-                        <td className="px-4 py-2 text-cyan-100">{row.pro}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="grid grid-cols-[minmax(12rem,1.2fr)_minmax(16rem,1.8fr)_minmax(9rem,1fr)_minmax(9rem,1fr)] text-left text-sm">
+                  <div className="border-b border-zinc-800 px-4 py-2 font-medium text-zinc-400">Capability</div>
+                  <div className="border-b border-zinc-800 px-4 py-2 font-medium text-zinc-400">Description</div>
+                  <div className="border-b border-zinc-800 px-4 py-2 font-medium text-zinc-400">Observer Mode</div>
+                  <div className="border-b border-zinc-800 px-4 py-2 font-medium text-zinc-400">Operator License</div>
+                  {section.rows.map((row) => (
+                    <div key={`${section.title}-${row.capability}`} className="contents">
+                      <div className="border-b border-zinc-800/70 px-4 py-2 text-zinc-200">{row.capability}</div>
+                      <div className="border-b border-zinc-800/70 px-4 py-2 text-zinc-400">{row.description}</div>
+                      <div className="border-b border-zinc-800/70 px-4 py-2 text-zinc-300 whitespace-nowrap">{row.free}</div>
+                      <div className="border-b border-zinc-800/70 px-4 py-2 text-cyan-100 whitespace-nowrap">{row.pro}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="space-y-2 p-3 md:hidden">
                 {section.rows.map((row) => (

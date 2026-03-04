@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { PublicFooter } from "@/components/public/PublicFooter";
-import { PublicNavLinks } from "@/components/public/PublicNavLinks";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
+import { PageHeader } from "@/components/public/PageHeader";
 import { SYSTEM_VERSION } from "@/lib/version";
 
 const RELEASE_CHANGES = [
@@ -23,17 +22,11 @@ const KNOWN_CONSTRAINTS = [
 export default function ReleasePage() {
   return (
     <LifeOSBackground>
-      <main id="main-content" className="mx-auto min-h-screen w-full max-w-6xl overflow-x-hidden px-4 py-8 text-zinc-100 sm:px-6">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">SYSTEM RELEASE</p>
-            <h1 className="mt-2 text-3xl font-semibold text-zinc-100">Release Package</h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <PublicNavLinks className="flex flex-wrap items-center gap-2 text-sm" />
-            <LanguageToggle />
-          </div>
-        </header>
+      <main id="main-content" className="mx-auto min-h-screen w-full max-w-6xl overflow-x-hidden px-4 py-10 text-zinc-100 sm:px-6 sm:py-12">
+        <PageHeader
+          kicker="SYSTEM RELEASE"
+          title="Release Package"
+        />
 
         <section className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
           <h2 className="text-sm font-medium text-zinc-100">Version</h2>

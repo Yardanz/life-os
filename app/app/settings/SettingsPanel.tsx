@@ -7,6 +7,7 @@ import { signOut } from "next-auth/react";
 import { DeleteAccountModal } from "@/components/control-room/DeleteAccountModal";
 import { ExportSystemLogModal } from "@/components/control-room/ExportSystemLogModal";
 import { SystemResetModal } from "@/components/control-room/SystemResetModal";
+import { PlanBadge } from "@/components/ui/PlanBadge";
 
 type SettingsPanelProps = {
   plan: "FREE" | "PRO";
@@ -135,8 +136,6 @@ export function SettingsPanel({ plan, providerLabel, isAdmin = false }: Settings
     }
   };
 
-  const planLabel = plan === "PRO" ? "Operator License" : "Observer Mode";
-
   return (
     <>
       <main id="main-content" className="mx-auto min-h-screen w-full max-w-6xl overflow-x-hidden px-4 py-8 text-zinc-100 sm:px-6">
@@ -172,9 +171,9 @@ export function SettingsPanel({ plan, providerLabel, isAdmin = false }: Settings
 
           <section className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
             <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-400">License</h2>
-            <p className="mt-3 text-sm text-zinc-300">
-              Current plan: <span className="text-zinc-100">{planLabel}</span>
-            </p>
+            <div className="mt-3">
+              <PlanBadge plan={plan} />
+            </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href="/pricing"

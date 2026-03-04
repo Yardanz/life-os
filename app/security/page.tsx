@@ -2,7 +2,6 @@ import Link from "next/link";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PublicNavLinks } from "@/components/public/PublicNavLinks";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
 
 export default function SecurityPage() {
   return (
@@ -15,7 +14,6 @@ export default function SecurityPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <PublicNavLinks className="flex flex-wrap items-center gap-2 text-sm" />
-            <LanguageToggle />
           </div>
         </header>
 

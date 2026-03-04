@@ -2,7 +2,6 @@ import Link from "next/link";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PublicNavLinks } from "@/components/public/PublicNavLinks";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
 
 export default function RestrictedPage() {
   return (
@@ -10,12 +9,11 @@ export default function RestrictedPage() {
       <main className="mx-auto min-h-screen w-full max-w-4xl px-6 py-10 text-zinc-100">
         <header className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Access Control</p>
+            <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Sign in</p>
             <h1 className="mt-2 text-3xl font-semibold text-zinc-100">Access Restricted</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <PublicNavLinks className="flex flex-wrap items-center gap-2 text-sm" />
-            <LanguageToggle />
           </div>
         </header>
 

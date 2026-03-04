@@ -31,7 +31,7 @@ import { StateExplanationModal } from "@/components/control-room/StateExplanatio
 import { UpgradePromptModal } from "@/components/control-room/UpgradePromptModal";
 import { ErrorIdNotice } from "@/components/ui/ErrorIdNotice";
 import { GlossaryModal } from "@/components/ui/GlossaryModal";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
+import { PlanBadge } from "@/components/ui/PlanBadge";
 import { SystemReportModal } from "@/components/ui/SystemReportModal";
 import { formatContributionValue, formatFactorLabel } from "@/lib/control-room/formatting";
 import { buildStateExplanation } from "@/lib/control-room/stateExplanation";
@@ -43,7 +43,7 @@ import { getCalibrationStage } from "@/lib/calibrationStage";
 import { deriveSystemStatus } from "@/lib/control-room/systemStatus";
 import { deriveRequiredActions } from "@/lib/control-room/requiredActions";
 import type { ProtocolObject } from "@/lib/engine/protocolRules";
-import { getInitialLang, setLang, t, type Locale } from "@/lib/i18n";
+import { t, type Locale } from "@/lib/i18n";
 import type { AntiChaosProtocol } from "@/lib/anti-chaos/antiChaos.types";
 import type {
   ControlRoomBreakdown,
@@ -486,7 +486,7 @@ export function ControlRoomDashboard({
   const [glossaryOpen, setGlossaryOpen] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [tzOffsetMinutes, setTzOffsetMinutes] = useState<number>(DEFAULT_TZ_OFFSET_MINUTES);
-  const [locale, setLocale] = useState<Locale>(() => getInitialLang(searchParams.get("lang")));
+  const locale: Locale = "en";
   const { mode: viewMode, setMode: setViewMode } = useViewMode();
   const [reloadKey, setReloadKey] = useState(0);
   const [operatorBriefDismissed, setOperatorBriefDismissed] = useState(false);
@@ -508,16 +508,11 @@ export function ControlRoomDashboard({
   const todayDayKey = useMemo(() => getDayKeyAtOffset(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
 
   useEffect(() => {
-    setLocale(getInitialLang(searchParams.get("lang")));
     const detectedOffset = -new Date().getTimezoneOffset();
     if (Number.isFinite(detectedOffset)) {
       setTzOffsetMinutes(Math.trunc(detectedOffset));
     }
-  }, [searchParams]);
-
-  useEffect(() => {
-    setLang(locale);
-  }, [locale]);
+  }, []);
 
   const operatorBriefStorageKey = useMemo(() => `lifeos.operator_brief.dismissed.${userId}`, [userId]);
 
@@ -1975,11 +1970,20 @@ export function ControlRoomDashboard({
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <Link
                   href="/"
-                  className="group inline-flex cursor-pointer items-center gap-1 text-xs uppercase tracking-[0.22em] text-zinc-500 transition-all duration-200 ease-out hover:text-zinc-300 hover:brightness-110 hover:underline hover:underline-offset-4"
+                  aria-label="Go to home page"
+                  title="Home"
+                  className="group inline-flex cursor-pointer items-center gap-1 rounded-sm px-1 py-0.5 text-xs uppercase tracking-[0.22em] text-zinc-400 transition-all duration-200 ease-out hover:text-cyan-200 hover:underline hover:underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                 >
-                  <span aria-hidden="true">←</span>
-                  <span>LIFE OS</span>
-                  <span className="text-[10px] normal-case tracking-normal text-zinc-600 transition-colors duration-200 group-hover:text-zinc-400">
+                  <span
+                    aria-hidden="true"
+                    className="text-cyan-300/90 transition-transform duration-200 ease-out group-hover:-translate-x-0.5"
+                  >
+                    &larr;
+                  </span>
+                  <span className="font-medium text-zinc-300 transition-colors duration-200 group-hover:text-cyan-100">
+                    LIFE OS
+                  </span>
+                  <span className="text-[10px] normal-case tracking-normal text-zinc-500 transition-colors duration-200 group-hover:text-cyan-200/90">
                     Home
                   </span>
                 </Link>
@@ -2162,11 +2166,20 @@ export function ControlRoomDashboard({
               <div className="max-w-xl">
                 <Link
                   href="/"
-                  className="group inline-flex cursor-pointer items-center gap-1 text-xs uppercase tracking-[0.22em] text-zinc-500 transition-all duration-200 ease-out hover:text-zinc-300 hover:brightness-110 hover:underline hover:underline-offset-4"
+                  aria-label="Go to home page"
+                  title="Home"
+                  className="group inline-flex cursor-pointer items-center gap-1 rounded-sm px-1 py-0.5 text-xs uppercase tracking-[0.22em] text-zinc-400 transition-all duration-200 ease-out hover:text-cyan-200 hover:underline hover:underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                 >
-                  <span aria-hidden="true">←</span>
-                  <span>LIFE OS</span>
-                  <span className="text-[10px] normal-case tracking-normal text-zinc-600 transition-colors duration-200 group-hover:text-zinc-400">
+                  <span
+                    aria-hidden="true"
+                    className="text-cyan-300/90 transition-transform duration-200 ease-out group-hover:-translate-x-0.5"
+                  >
+                    &larr;
+                  </span>
+                  <span className="font-medium text-zinc-300 transition-colors duration-200 group-hover:text-cyan-100">
+                    LIFE OS
+                  </span>
+                  <span className="text-[10px] normal-case tracking-normal text-zinc-500 transition-colors duration-200 group-hover:text-cyan-200/90">
                     Home
                   </span>
                 </Link>
@@ -2452,8 +2465,8 @@ export function ControlRoomDashboard({
 
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
-                  <LanguageToggle value={locale} onChange={setLocale} />
                   <StatusBadge status={data.status} locale={locale} />
+                  <PlanBadge plan={data.plan} />
                   {data.featureAccess.antiChaos ? (
                     <button
                       type="button"

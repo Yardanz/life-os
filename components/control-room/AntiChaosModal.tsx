@@ -1,5 +1,6 @@
 "use client";
 
+import { ModalShell } from "@/components/ui/ModalShell";
 import type { AntiChaosProtocol } from "@/lib/anti-chaos/antiChaos.types";
 import { minutesToTimeInput } from "@/lib/date/timeMinutes";
 
@@ -15,16 +16,9 @@ function signed(value: number): string {
 }
 
 export function AntiChaosModal({ open, onClose, protocol, isPro }: AntiChaosModalProps) {
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center">
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-label="Anti-Chaos stabilization protocol"
-        className="w-full max-w-2xl rounded-2xl border border-zinc-700 bg-zinc-950 p-5 text-zinc-100 shadow-2xl"
-      >
+    <ModalShell open={open} onClose={onClose} ariaLabel="Anti-Chaos stabilization protocol" panelClassName="max-w-2xl p-5">
+      <div className="text-zinc-100">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Stabilization Protocol</p>
@@ -142,7 +136,7 @@ export function AntiChaosModal({ open, onClose, protocol, isPro }: AntiChaosModa
             </div>
           </div>
         ) : null}
-      </section>
-    </div>
+      </div>
+    </ModalShell>
   );
 }

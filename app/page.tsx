@@ -7,32 +7,17 @@ import { SystemPreviewCard } from "@/components/landing/SystemPreviewCard";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PublicNavLinks } from "@/components/public/PublicNavLinks";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
-import { normalizeLang, t, type Lang } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
 
-type LandingPageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-};
-
-export default async function LandingPage({ searchParams }: LandingPageProps) {
+export default async function LandingPage() {
   const session = await auth();
-  const params = (await searchParams) ?? {};
-  const rawLang = Array.isArray(params.lang) ? params.lang[0] : params.lang;
-  const lang: Lang = normalizeLang(rawLang) ?? "en";
-  const withLang = (href: string) => {
-    const url = new URL(href, "http://localhost");
-    url.searchParams.set("lang", lang);
-    return `${url.pathname}${url.search}`;
-  };
   const buildAuthOverlayHref = (callbackUrl: string) => {
     const url = new URL("/", "http://localhost");
     url.searchParams.set("auth", "1");
     url.searchParams.set("callbackUrl", callbackUrl);
-    url.searchParams.set("lang", lang);
     return `${url.pathname}${url.search}`;
   };
   const controlRoomAuthHref = buildAuthOverlayHref("/app");
-  const stayOnPageAuthHref = buildAuthOverlayHref(withLang("/"));
   const primaryHref = session ? "/app" : controlRoomAuthHref;
 
   return (
@@ -42,11 +27,10 @@ export default async function LandingPage({ searchParams }: LandingPageProps) {
           <p className="text-xs uppercase tracking-[0.24em] text-zinc-400">LIFE OS</p>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <PublicNavLinks className="flex flex-wrap items-center gap-2" />
-            <LanguageToggle />
             {session ? (
               <>
                 <Link
-                  href={withLang("/app")}
+                  href="/app"
                   className="min-h-10 rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-cyan-100"
                 >
                   Open /app
@@ -67,10 +51,10 @@ export default async function LandingPage({ searchParams }: LandingPageProps) {
               </>
             ) : (
               <Link
-                href={stayOnPageAuthHref}
+                href={controlRoomAuthHref}
                 className="min-h-10 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-200"
               >
-                Access Control
+                Sign in
               </Link>
             )}
           </div>
@@ -80,23 +64,31 @@ export default async function LandingPage({ searchParams }: LandingPageProps) {
           <div>
             <p className="text-xs uppercase tracking-[0.28em] text-zinc-500">Operational Interface</p>
             <h1 className="mt-4 text-4xl font-semibold leading-tight sm:text-5xl">
-              {t("landingHeroTitle", lang)}
+              {t("landingHeroTitle")}
             </h1>
-            <p className="mt-4 max-w-2xl text-base text-zinc-300 sm:text-lg">{t("landingHeroSubtitle", lang)}</p>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-300">
-              Not motivation.
-              <br />
-              Not streaks.
-              <br />
-              Not AI advice.
-              <br />A deterministic stability model.
-            </p>
-            <p className="mt-2 text-xs text-zinc-500">Built on deterministic state modeling. No black-box inference.</p>
-            <p className="mt-4 text-xs text-zinc-500">
-              Most tools help you do more.
-              <br />
-              LIFE OS prevents system collapse.
-            </p>
+            <p className="mt-4 max-w-2xl text-base text-zinc-300 sm:text-lg">{t("landingHeroSubtitle")}</p>
+            <div className="mt-5 space-y-4">
+              <div className="rounded-lg border border-zinc-800/80 bg-zinc-900/40 p-3">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">What It Is Not</p>
+                <div className="mt-2 space-y-1 text-sm font-medium text-zinc-200">
+                  <p>Not motivation.</p>
+                  <p>Not streaks.</p>
+                  <p>Not AI advice.</p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-cyan-100">A deterministic stability model.</p>
+                <p className="text-xs text-zinc-500">Built on deterministic state modeling. No black-box inference.</p>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Positioning</p>
+                <p className="text-sm text-zinc-300">Most tools help you do more.</p>
+                <p className="text-sm font-medium text-zinc-100">LIFE OS prevents system collapse.</p>
+              </div>
+            </div>
+
             <ul className="mt-4 grid gap-1 text-xs text-zinc-400 sm:grid-cols-3">
               <li className="flex items-center gap-2">
                 <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-cyan-400/80" />
@@ -113,19 +105,19 @@ export default async function LandingPage({ searchParams }: LandingPageProps) {
             </ul>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href={withLang(primaryHref)}
+                href={primaryHref}
                 className="min-h-10 rounded-md border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 transition duration-200 hover:border-cyan-300"
               >
-                {t("ctaEnterControlRoom", lang)}
+                {t("ctaEnterControlRoom")}
               </Link>
               <Link
-                href={withLang("/demo")}
+                href="/demo"
                 className="min-h-10 rounded-md border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition duration-200 hover:border-zinc-500"
               >
-                {t("ctaViewGuidedDemo", lang)}
+                {t("ctaViewGuidedDemo")}
               </Link>
               <Link
-                href={withLang("/demo/live")}
+                href="/demo/live"
                 className="min-h-10 rounded-md border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm text-cyan-100 transition duration-200 hover:border-cyan-300"
               >
                 Open simulation view
@@ -311,7 +303,7 @@ export default async function LandingPage({ searchParams }: LandingPageProps) {
 
         <section className="mt-20 rounded-2xl border border-zinc-800 bg-zinc-950/85 p-6">
           <h2 className="text-2xl font-semibold text-zinc-100">Operate within your system&apos;s limits - intentionally.</h2>
-          <LandingBottomCtas primaryHref={withLang(primaryHref)} lang={lang} />
+          <LandingBottomCtas primaryHref={primaryHref} />
         </section>
 
         <PublicFooter />

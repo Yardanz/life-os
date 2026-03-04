@@ -6,7 +6,6 @@ import { LandingAuthOverlayController } from "@/components/auth/LandingAuthOverl
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PublicNavLinks } from "@/components/public/PublicNavLinks";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { SYSTEM_VERSION } from "@/lib/version";
 
 type HealthPayload = {
@@ -67,12 +66,11 @@ export default function StatusPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <PublicNavLinks className="flex flex-wrap items-center gap-2 text-sm" />
-            <LanguageToggle />
             <Link
               href="/status?auth=1&callbackUrl=/status"
               className="min-h-10 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-200 transition hover:border-zinc-500"
             >
-              Access Control
+              Sign in
             </Link>
           </div>
         </header>

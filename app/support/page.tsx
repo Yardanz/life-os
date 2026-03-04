@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { PublicFooter } from "@/components/public/PublicFooter";
-import { PublicNavLinks } from "@/components/public/PublicNavLinks";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
+import { PageHeader } from "@/components/public/PageHeader";
 
 function resolveSupportEmail(): string {
   return process.env.SUPPORT_EMAIL ?? process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@lifeos.local";
@@ -14,19 +13,14 @@ export default function SupportPage() {
 
   return (
     <LifeOSBackground>
-      <main id="main-content" className="mx-auto min-h-screen w-full max-w-6xl overflow-x-hidden px-4 py-8 text-zinc-100 sm:px-6">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">SUPPORT</p>
-            <h1 className="mt-2 text-3xl font-semibold text-zinc-100">Operational support channel</h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <PublicNavLinks className="flex flex-wrap items-center gap-2 text-sm" />
-            <LanguageToggle />
-          </div>
-        </header>
+      <main id="main-content" className="mx-auto min-h-screen w-full max-w-6xl overflow-x-hidden px-4 py-10 text-zinc-100 sm:px-6 sm:py-12">
+        <PageHeader
+          kicker="SUPPORT"
+          title="Operational support channel"
+          showBackToHome
+        />
 
-        <section className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
+        <section className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
           <p className="text-sm text-zinc-300">Contact channel:</p>
           <a
             href={mailtoHref}
