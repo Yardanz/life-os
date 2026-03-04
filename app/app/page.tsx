@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { unstable_noStore as noStore } from "next/cache";
 import { auth } from "@/auth";
 import { parseISODateParam, formatISODate, getLocalISODate } from "@/lib/date/localDate";
 import type { ProtocolObject } from "@/lib/engine/protocolRules";
@@ -17,7 +18,10 @@ type AppControlRoomPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function AppControlRoomPage({ searchParams }: AppControlRoomPageProps) {
+  noStore();
   const sessionTimer = startTiming("app.page.auth");
   const sessionPromise = auth();
   const cookiePromise = cookies();

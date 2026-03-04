@@ -7,7 +7,8 @@ export type Plan = UserPlan;
 export const PLAN_OVERRIDE_COOKIE = "lifeos_plan_override";
 
 export function isPro(user: { operatorActive?: boolean; plan?: UserPlan | string } | null | undefined): boolean {
-  return Boolean(user?.operatorActive);
+  const normalized = typeof user?.plan === "string" ? user.plan.toUpperCase() : user?.plan;
+  return normalized === UserPlan.PRO || Boolean(user?.operatorActive);
 }
 
 function isDevPlanOverrideEnabled(): boolean {
@@ -45,10 +46,18 @@ export async function ensureUserWithPlan(userId: string, request?: Request) {
 
   if (existing) {
     const entitlement = await getUserEntitlement(existing.id);
-    const operatorActive = overridePlan === UserPlan.PRO || isOperatorActive(entitlement);
+    const entitlementPlan = isOperatorActive(entitlement) ? UserPlan.PRO : UserPlan.FREE;
+    const resolvedPlan = overridePlan ?? (existing.plan === UserPlan.PRO ? UserPlan.PRO : entitlementPlan);
+    if (!overridePlan && resolvedPlan !== existing.plan && resolvedPlan === UserPlan.PRO) {
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { plan: resolvedPlan },
+      });
+    }
+    const operatorActive = resolvedPlan === UserPlan.PRO;
     return {
       ...existing,
-      plan: operatorActive ? UserPlan.PRO : UserPlan.FREE,
+      plan: resolvedPlan,
       operatorActive,
     };
   }

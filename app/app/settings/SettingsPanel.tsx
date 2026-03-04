@@ -13,6 +13,13 @@ type SettingsPanelProps = {
   plan: "FREE" | "PRO";
   providerLabel: "Google" | "GitHub" | "OAuth" | "Unknown";
   isAdmin?: boolean;
+  debugPlan?: {
+    userId: string;
+    email: string | null;
+    dbPlan: "FREE" | "PRO";
+    sessionPlan: "FREE" | "PRO" | null;
+    resolvedPlan: "FREE" | "PRO";
+  } | null;
 };
 
 type SystemSnapshotRecord = {
@@ -23,7 +30,7 @@ type SystemSnapshotRecord = {
   revokedAt: string | null;
 };
 
-export function SettingsPanel({ plan, providerLabel, isAdmin = false }: SettingsPanelProps) {
+export function SettingsPanel({ plan, providerLabel, isAdmin = false, debugPlan = null }: SettingsPanelProps) {
   const router = useRouter();
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
@@ -238,6 +245,19 @@ export function SettingsPanel({ plan, providerLabel, isAdmin = false }: Settings
               >
                 Internal Health Console
               </Link>
+            </div>
+          </section>
+        ) : null}
+
+        {debugPlan ? (
+          <section className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-amber-200">Debug Plan Source</h2>
+            <div className="mt-2 space-y-1 text-xs text-zinc-300">
+              <p>User: {debugPlan.userId}</p>
+              <p>Email: {debugPlan.email ?? "unknown"}</p>
+              <p>DB plan: {debugPlan.dbPlan}</p>
+              <p>Session plan: {debugPlan.sessionPlan ?? "missing"}</p>
+              <p>Resolved plan: {debugPlan.resolvedPlan}</p>
             </div>
           </section>
         ) : null}

@@ -1378,6 +1378,7 @@ function resolveStatus(
 
 export async function GET(request: Request) {
   const requestTimer = startTiming("api.control-room.GET");
+  const noStoreHeaders = { "Cache-Control": "no-store" };
   try {
     const demoMode = isDemoModeRequest(request);
     const sessionTimer = startTiming("api.control-room.auth", { demoMode });
@@ -1386,7 +1387,7 @@ export async function GET(request: Request) {
     const sessionUserId = session?.user?.id;
     if (!sessionUserId && !demoMode) {
       requestTimer.end({ status: 401 });
-      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401, headers: noStoreHeaders });
     }
     if (demoMode) {
       const demoSeedTimer = startTiming("api.control-room.ensureLiveDemoData");
@@ -1541,7 +1542,7 @@ export async function GET(request: Request) {
             date: formatDateOnly(date),
             hasAnyCheckins,
           },
-          { status: 404 }
+          { status: 404, headers: noStoreHeaders }
         );
       }
 
@@ -2351,10 +2352,12 @@ export async function GET(request: Request) {
           projection30d,
         },
       },
-      { status: 200 }
+      { status: 200, headers: noStoreHeaders }
     );
   } catch (error) {
     requestTimer.end({ status: 500 });
-    return errorResponse(error);
+    const response = errorResponse(error);
+    response.headers.set("Cache-Control", "no-store");
+    return response;
   }
 }

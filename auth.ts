@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import { UserPlan } from "@prisma/client";
 import authConfig from "@/auth.config";
 import { assertEnv } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -44,11 +45,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user?.id) token.sub = user.id;
+      if (typeof (token as { plan?: unknown }).plan !== "string" && token.sub) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: { plan: true },
+        });
+        (token as { plan?: string }).plan = dbUser?.plan ?? UserPlan.FREE;
+      }
       return token;
     },
     async session({ session, token }) {
       if (session.user && token.sub) {
         session.user.id = token.sub;
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: { plan: true, email: true },
+        });
+        session.user.plan = dbUser?.plan ?? UserPlan.FREE;
+        if (dbUser?.email) {
+          session.user.email = dbUser.email;
+        }
       }
       return session;
     },
