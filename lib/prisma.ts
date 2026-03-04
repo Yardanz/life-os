@@ -56,6 +56,11 @@ assertEnv();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  // Serverless-friendly defaults to reduce upstream pool pressure on Vercel.
+  max: process.env.NODE_ENV === "production" ? 1 : 10,
+  connectionTimeoutMillis: 10_000,
+  idleTimeoutMillis: 10_000,
+  keepAlive: true,
 });
 const adapter = new PrismaPg(pool);
 
