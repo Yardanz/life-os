@@ -60,7 +60,10 @@
 - Set runtime `DATABASE_URL` to Supabase **pooler** host (`<ref>.pooler.supabase.com`, usually `:6543`).
 - Set `DIRECT_DATABASE_URL` to Supabase **direct** host (`db.<ref>.supabase.co`, usually `:5432`) for CLI migrations.
 - If `DIRECT_DATABASE_URL` is missing, run migrations with `DATABASE_URL` temporarily pointed to the direct URL in your local shell session.
-- Run `npx prisma migrate deploy` to apply committed migrations safely.
+- Quick apply flow for empty Supabase projects:
+  1. `npx prisma db push` (forces schema objects immediately, including Auth adapter tables).
+  2. If migrations already exist, run `npx prisma migrate deploy`.
+  3. If no migrations exist yet, create initial migration in a controlled local workflow (`npx prisma migrate dev --name init`) and commit it.
 - Run `npx prisma generate` after deploy.
 - Never run `prisma migrate dev` against production.
 
@@ -68,6 +71,7 @@
 - Use `GET /api/health/db` for a lightweight runtime DB probe (`SELECT 1`).
 - Response includes env presence flags only: `hasDatabaseUrl`, `hasDirectUrl`, `hasPoolerUrl`.
 - On failure, response includes `messageId` for server log correlation.
+- Use `npm run db:info` (runtime URL) and `npm run db:info:migrate` (direct-or-fallback URL) to print safe DB target info.
 
 ## Common failures
 - Missing `DATABASE_URL`: Prisma client initialization fails at startup/build.
