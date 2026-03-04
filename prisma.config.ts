@@ -1,9 +1,11 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is not set. Expected in .env");
+const runtimeDatabaseUrl = process.env.DATABASE_URL?.trim();
+const directDatabaseUrl = process.env.DIRECT_DATABASE_URL?.trim();
+
+if (!runtimeDatabaseUrl && !directDatabaseUrl) {
+  throw new Error("DATABASE_URL or DIRECT_DATABASE_URL must be set.");
 }
 
 export default defineConfig({
@@ -11,7 +13,8 @@ export default defineConfig({
   migrations: {
     path: "prisma/migrations",
   },
+  // Prisma CLI (migrate/status/deploy) should prefer direct DB URL when available.
   datasource: {
-    url: databaseUrl,
+    url: directDatabaseUrl || runtimeDatabaseUrl,
   },
 });

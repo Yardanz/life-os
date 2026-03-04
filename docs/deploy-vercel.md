@@ -9,6 +9,7 @@
 ## Vercel deploy
 1. Add required environment variables in Vercel project settings:
    - `DATABASE_URL`
+   - `DIRECT_DATABASE_URL`
    - `AUTH_URL`
    - `AUTH_SECRET`
    - `AUTH_TRUST_HOST=true`
@@ -48,17 +49,22 @@
 - Use `prisma migrate deploy` only for production/staging migration application.
 
 ## Initializing Supabase DB
-- Use the Supabase **direct** Postgres connection string in `DATABASE_URL`.
-- Supabase URL should be direct host/port (typically `:5432`) and reachable from Vercel.
+- Set runtime `DATABASE_URL` to Supabase **pooler** host (`<ref>.pooler.supabase.com`, usually `:6543`).
+- Set `DIRECT_DATABASE_URL` to Supabase **direct** host (`db.<ref>.supabase.co`, usually `:5432`) for CLI migrations.
+- If `DIRECT_DATABASE_URL` is missing, run migrations with `DATABASE_URL` temporarily pointed to the direct URL in your local shell session.
 - Run `npx prisma migrate deploy` to apply committed migrations safely.
 - Run `npx prisma generate` after deploy.
 - Never run `prisma migrate dev` against production.
 
 ## DB Connectivity Check
 - Use `GET /api/health/db` for a lightweight runtime DB probe (`SELECT 1`).
-- Response `ok: false` includes `errorId` for server log correlation.
+- Response includes env presence flags only: `hasDatabaseUrl`, `hasDirectUrl`, `hasPoolerUrl`.
+- On failure, response includes `messageId` for server log correlation.
 
 ## Common failures
 - Missing `DATABASE_URL`: Prisma client initialization fails at startup/build.
+- Wrong Supabase host type:
+  - Runtime should use pooler (`DATABASE_URL`).
+  - Migrations should use direct (`DIRECT_DATABASE_URL`).
 - Missing `AUTH_SECRET` (or `NEXTAUTH_SECRET` alias): auth/session initialization fails.
 - OAuth callback mismatch: provider redirects fail unless callback URL matches `AUTH_URL`.
