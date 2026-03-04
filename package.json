@@ -5,11 +5,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/prisma-generate-if-env.mjs --require-db && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prisma:generate": "node scripts/prisma-generate-if-env.mjs",
+    "db:migrate": "prisma migrate deploy",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "scoring:simulate": "npx tsx scripts/simulate-v3.ts",

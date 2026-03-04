@@ -48,6 +48,14 @@
 - Do not run `prisma migrate dev` during production build.
 - Use `prisma migrate deploy` only for production/staging migration application.
 
+## Auth Adapter Tables (One-time init)
+- If login fails with `The table public.Account does not exist`, migrations were not applied to the target Supabase DB.
+- Run once against the production database:
+  1. Ensure `DIRECT_DATABASE_URL` points to `db.<ref>.supabase.co:5432`.
+  2. Run `npx prisma migrate deploy`.
+  3. Verify with `npx prisma migrate status`.
+- Existing repos with committed migrations should use `migrate deploy` (not `migrate dev`) for production init.
+
 ## Initializing Supabase DB
 - Set runtime `DATABASE_URL` to Supabase **pooler** host (`<ref>.pooler.supabase.com`, usually `:6543`).
 - Set `DIRECT_DATABASE_URL` to Supabase **direct** host (`db.<ref>.supabase.co`, usually `:5432`) for CLI migrations.
