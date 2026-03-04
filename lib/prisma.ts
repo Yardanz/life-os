@@ -57,8 +57,23 @@ assertEnv();
 const databaseUrl = process.env.DATABASE_URL?.trim() ?? "";
 const isSupabasePooler = /pooler\.supabase\.com/i.test(databaseUrl);
 
+function buildPoolConnectionString(rawUrl: string, forPooler: boolean): string {
+  if (!forPooler) return rawUrl;
+  try {
+    const parsed = new URL(rawUrl);
+    // Prevent pg from forcing certificate validation mode from URL params.
+    parsed.searchParams.delete("sslmode");
+    parsed.searchParams.delete("sslcert");
+    parsed.searchParams.delete("sslkey");
+    parsed.searchParams.delete("sslrootcert");
+    return parsed.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
 const pool = new Pool({
-  connectionString: databaseUrl,
+  connectionString: buildPoolConnectionString(databaseUrl, isSupabasePooler),
   // Serverless-friendly defaults to reduce upstream pool pressure on Vercel.
   max: process.env.NODE_ENV === "production" ? 1 : 10,
   connectionTimeoutMillis: 10_000,
