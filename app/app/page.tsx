@@ -30,7 +30,7 @@ export default async function AppControlRoomPage({ searchParams }: AppControlRoo
 
   const demoMode = cookieStore.get(DEMO_MODE_COOKIE)?.value === DEMO_MODE_COOKIE_VALUE;
   if (!session?.user?.id) {
-    redirect("/signin?callbackUrl=/app");
+    redirect("/signin?callbackUrl=/app/live");
   }
 
   if (

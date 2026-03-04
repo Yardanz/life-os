@@ -17,8 +17,8 @@ export default async function LandingPage() {
     url.searchParams.set("callbackUrl", callbackUrl);
     return `${url.pathname}${url.search}`;
   };
-  const controlRoomAuthHref = buildAuthOverlayHref("/app");
-  const primaryHref = session ? "/app" : controlRoomAuthHref;
+  const controlRoomAuthHref = buildAuthOverlayHref("/app/live");
+  const primaryHref = session ? "/app/live" : controlRoomAuthHref;
 
   return (
     <LifeOSBackground>
@@ -30,7 +30,7 @@ export default async function LandingPage() {
             {session ? (
               <>
                 <Link
-                  href="/app"
+                  href="/app/live"
                   className="min-h-10 rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-cyan-100"
                 >
                   Open /app

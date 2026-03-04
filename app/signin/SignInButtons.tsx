@@ -16,7 +16,7 @@ const providerButtons: ProviderButton[] = [
 
 export function SignInButtons() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/app";
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/app/live";
   const oauthEnabled = isPublicOAuthEnabledClient();
 
   return (

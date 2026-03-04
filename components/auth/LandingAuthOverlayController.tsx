@@ -11,8 +11,8 @@ export function LandingAuthOverlayController() {
   const open = searchParams.get("auth") === "1";
   const callbackUrl = useMemo(() => {
     const raw = searchParams.get("callbackUrl");
-    if (!raw) return "/app";
-    return raw.startsWith("/") ? raw : "/app";
+    if (!raw) return "/app/live";
+    return raw.startsWith("/") ? raw : "/app/live";
   }, [searchParams]);
   const mode = searchParams.get("mode") === "signup" ? "signup" : "signin";
 
