@@ -36,6 +36,75 @@ async function resolveConfigVersion(configVersion?: number): Promise<number> {
   return activeConfig.configVersion;
 }
 
+export async function GET(request: Request) {
+  try {
+    const session = await auth();
+    const sessionUserId = session?.user?.id;
+    if (!sessionUserId) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await ensureUserWithPlan(sessionUserId, request);
+    const { searchParams } = new URL(request.url);
+    const dateParam = searchParams.get("date");
+    const tzOffsetRaw = searchParams.get("tzOffsetMinutes");
+    const tzOffsetMinutes = clampTzOffsetMinutes(
+      tzOffsetRaw == null || tzOffsetRaw === "" ? DEFAULT_TZ_OFFSET_MINUTES : Number(tzOffsetRaw)
+    );
+    const date = dateParam
+      ? toUtcDateOnly(dateParam)
+      : toUtcDateOnly(getDayKeyAtOffset(new Date(), tzOffsetMinutes));
+
+    const checkin = await prisma.dailyCheckIn.findUnique({
+      where: {
+        userId_date: {
+          userId: user.id,
+          date,
+        },
+      },
+      select: {
+        date: true,
+        stressLevel: true,
+        bedtimeMinutes: true,
+        wakeTimeMinutes: true,
+        notes: true,
+      },
+    });
+
+    if (!checkin) {
+      return NextResponse.json({ ok: true, data: null }, { status: 200 });
+    }
+
+    let notes: Record<string, unknown> = {};
+    try {
+      notes = checkin.notes ? (JSON.parse(checkin.notes) as Record<string, unknown>) : {};
+    } catch {
+      notes = {};
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        data: {
+          date: formatDateOnly(checkin.date),
+          sleepHours: typeof notes.sleepHours === "number" ? notes.sleepHours : null,
+          sleepQuality: typeof notes.sleepQuality === "number" ? notes.sleepQuality : null,
+          bedtimeMinutes: checkin.bedtimeMinutes,
+          wakeTimeMinutes: checkin.wakeTimeMinutes,
+          workout: typeof notes.workout === "number" ? notes.workout : null,
+          deepWorkMin: typeof notes.deepWorkMin === "number" ? notes.deepWorkMin : null,
+          learningMin: typeof notes.learningMin === "number" ? notes.learningMin : null,
+          moneyDelta: typeof notes.moneyDelta === "number" ? notes.moneyDelta : null,
+          stress: checkin.stressLevel,
+        },
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
 export async function POST(request: Request) {
   try {
     requireWritableMode(request);

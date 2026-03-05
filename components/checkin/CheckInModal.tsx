@@ -6,6 +6,7 @@ import { ModalShell } from "@/components/ui/ModalShell";
 type CheckInModalProps = {
   open: boolean;
   dateISO: string;
+  baselineLifeScore?: number | null;
   activeProtocol?: {
     state: "OPEN" | "CAUTION" | "LOCKDOWN";
     horizonHours: number;
@@ -15,7 +16,14 @@ type CheckInModalProps = {
   onSaved: () => void;
 };
 
-export function CheckInModal({ open, dateISO, activeProtocol = null, onClose, onSaved }: CheckInModalProps) {
+export function CheckInModal({
+  open,
+  dateISO,
+  baselineLifeScore = null,
+  activeProtocol = null,
+  onClose,
+  onSaved,
+}: CheckInModalProps) {
   return (
     <ModalShell open={open} onClose={onClose} ariaLabel="Daily Check-In modal" panelClassName="max-w-3xl p-0">
       {({ requestClose }) => (
@@ -36,6 +44,7 @@ export function CheckInModal({ open, dateISO, activeProtocol = null, onClose, on
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
             <DailyCheckinForm
               initialDateISO={dateISO}
+              baselineLifeScore={baselineLifeScore}
               activeProtocol={activeProtocol}
               onSuccess={() => requestClose(onSaved)}
             />

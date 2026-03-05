@@ -388,7 +388,7 @@ function SystemMetricBar({ label, value, hint, tone, tooltip, uninitialized = fa
   );
 }
 
-type ControlRoomDashboardProps = {
+export type ControlRoomDashboardProps = {
   userId?: string;
   userEmail?: string | null;
   demoMode?: boolean;

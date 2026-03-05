@@ -11,7 +11,8 @@ import { ensureLiveDemoData } from "@/lib/demo/seedLiveDemo";
 import { DEMO_MODE_COOKIE, DEMO_MODE_COOKIE_VALUE, LIVE_DEMO_USER_ID } from "@/lib/demoMode";
 import { canAccessApp } from "@/lib/softLaunch";
 import { startTiming } from "@/lib/observability/timing";
-import { ControlRoomDashboard } from "@/components/control-room/ControlRoomDashboard";
+import { ControlRoomLegacy } from "@/components/control-room/ControlRoomLegacy";
+import { ControlRoomV2 } from "@/components/control-room/v2/ControlRoomV2";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 
 type AppControlRoomPageProps = {
@@ -70,6 +71,7 @@ export default async function AppControlRoomPage({ searchParams }: AppControlRoo
   const initialSelectedDate = explicitDate ?? latestCheckinDate ?? getLocalISODate();
   const appVersion = process.env.VERSION ?? process.env.VERCEL_GIT_COMMIT_SHA ?? "dev";
   const supportEmail = process.env.SUPPORT_EMAIL ?? process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? null;
+  const controlRoomV2Enabled = String(process.env.CONTROL_ROOM_V2 ?? "").toLowerCase() === "true";
   const initialActiveProtocol = activeProtocol
       ? {
         id: activeProtocol.id,
@@ -102,16 +104,29 @@ export default async function AppControlRoomPage({ searchParams }: AppControlRoo
   return (
     <LifeOSBackground>
       <Suspense fallback={null}>
-        <ControlRoomDashboard
-          userId={effectiveUserId}
-          userEmail={demoMode ? null : (session?.user?.email ?? null)}
-          demoMode={demoMode}
-          appVersion={appVersion}
-          supportEmail={supportEmail}
-          initialSelectedDate={initialSelectedDate}
-          latestCheckinDate={latestCheckinDate}
-          initialActiveProtocol={initialActiveProtocol}
-        />
+        {controlRoomV2Enabled ? (
+          <ControlRoomV2
+            userId={effectiveUserId}
+            userEmail={demoMode ? null : (session?.user?.email ?? null)}
+            demoMode={demoMode}
+            appVersion={appVersion}
+            supportEmail={supportEmail}
+            initialSelectedDate={initialSelectedDate}
+            latestCheckinDate={latestCheckinDate}
+            initialActiveProtocol={initialActiveProtocol}
+          />
+        ) : (
+          <ControlRoomLegacy
+            userId={effectiveUserId}
+            userEmail={demoMode ? null : (session?.user?.email ?? null)}
+            demoMode={demoMode}
+            appVersion={appVersion}
+            supportEmail={supportEmail}
+            initialSelectedDate={initialSelectedDate}
+            latestCheckinDate={latestCheckinDate}
+            initialActiveProtocol={initialActiveProtocol}
+          />
+        )}
       </Suspense>
     </LifeOSBackground>
   );

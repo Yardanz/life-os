@@ -42,6 +42,7 @@ function createInitialState(): CheckinFormState {
 
 type DailyCheckinFormProps = {
   initialDateISO?: string;
+  baselineLifeScore?: number | null;
   activeProtocol?: {
     state: "OPEN" | "CAUTION" | "LOCKDOWN";
     horizonHours: number;
@@ -78,11 +79,17 @@ function computeProjectionSignals(input: CheckinFormState) {
   };
 }
 
-export function DailyCheckinForm({ initialDateISO, activeProtocol = null, onSuccess }: DailyCheckinFormProps = {}) {
+export function DailyCheckinForm({
+  initialDateISO,
+  baselineLifeScore = null,
+  activeProtocol = null,
+  onSuccess,
+}: DailyCheckinFormProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedDate = initialDateISO ?? parseISODateParam(searchParams.get("date")) ?? getLocalISODate();
   const initialFormRef = useRef<CheckinFormState>(createInitialState());
+  const [baseForm, setBaseForm] = useState<CheckinFormState>(initialFormRef.current);
   const [form, setForm] = useState<CheckinFormState>(initialFormRef.current);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUpdatingScreen, setIsUpdatingScreen] = useState(false);
@@ -94,7 +101,7 @@ export function DailyCheckinForm({ initialDateISO, activeProtocol = null, onSucc
 
   const canSubmit = useMemo(() => !isSubmitting && !isUpdatingScreen, [isSubmitting, isUpdatingScreen]);
   const hasChanges = useMemo(() => {
-    const initial = initialFormRef.current;
+    const initial = baseForm;
     return (
       form.sleepHours !== initial.sleepHours ||
       form.sleepQuality !== initial.sleepQuality ||
@@ -106,15 +113,24 @@ export function DailyCheckinForm({ initialDateISO, activeProtocol = null, onSucc
       form.moneyDelta !== initial.moneyDelta ||
       form.stress !== initial.stress
     );
-  }, [form]);
+  }, [baseForm, form]);
   const canApply = canSubmit && hasChanges;
 
-  const baseProjection = useMemo(() => computeProjectionSignals(initialFormRef.current), []);
+  const baseProjection = useMemo(() => computeProjectionSignals(baseForm), [baseForm]);
   const projected = useMemo(() => computeProjectionSignals(form), [form]);
   const recoveryDelta = projected.recovery - baseProjection.recovery;
   const loadDelta = projected.load - baseProjection.load;
   const riskDelta = projected.risk - baseProjection.risk;
   const riskDirection = Math.abs(riskDelta) < 0.5 ? "stable" : riskDelta > 0 ? "up" : "down";
+  const displayBaseLifeScore =
+    typeof baselineLifeScore === "number" && Number.isFinite(baselineLifeScore)
+      ? clampNumber(baselineLifeScore, 0, 100)
+      : baseProjection.lifeScore;
+  const displayProjectedLifeScore = clampNumber(
+    displayBaseLifeScore + (projected.lifeScore - baseProjection.lifeScore),
+    0,
+    100
+  );
   const activeProtocolDeepWorkCap = useMemo(() => {
     if (!activeProtocol) return null;
     const deepWorkConstraint = activeProtocol.constraints.find((item) => item.label.toLowerCase().includes("deep work cap"));
@@ -190,6 +206,84 @@ export function DailyCheckinForm({ initialDateISO, activeProtocol = null, onSucc
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadExistingCheckin = async () => {
+      try {
+        const tzOffsetMinutes = -new Date().getTimezoneOffset();
+        const response = await fetch(`/api/checkin?date=${selectedDate}&tzOffsetMinutes=${tzOffsetMinutes}`, {
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as
+          | {
+              ok: true;
+              data:
+                | {
+                    sleepHours: number | null;
+                    sleepQuality: number | null;
+                    bedtimeMinutes: number | null;
+                    wakeTimeMinutes: number | null;
+                    workout: number | null;
+                    deepWorkMin: number | null;
+                    learningMin: number | null;
+                    moneyDelta: number | null;
+                    stress: number | null;
+                  }
+                | null;
+            }
+          | { ok: false; error?: string };
+        if (cancelled || !response.ok || !payload.ok) return;
+
+        const source = payload.data;
+        if (!source) return;
+
+        const normalized = normalizeCheckinCore({
+          sleepHours: source.sleepHours ?? CHECKIN_LIMITS.sleepHours.defaultValue,
+          sleepQuality: source.sleepQuality ?? CHECKIN_LIMITS.sleepQuality.defaultValue,
+          bedtimeMinutes: source.bedtimeMinutes ?? CHECKIN_LIMITS.bedtimeMinutes.defaultValue,
+          wakeTimeMinutes:
+            source.wakeTimeMinutes ??
+            deriveWakeFromBedtime(
+              source.bedtimeMinutes ?? CHECKIN_LIMITS.bedtimeMinutes.defaultValue,
+              source.sleepHours ?? CHECKIN_LIMITS.sleepHours.defaultValue
+            ),
+          workout: (source.workout ?? 0) > 0,
+          deepWorkMin: source.deepWorkMin ?? CHECKIN_LIMITS.deepWorkMin.defaultValue,
+          learningMin: source.learningMin ?? CHECKIN_LIMITS.learningMin.defaultValue,
+          moneyDelta: source.moneyDelta ?? 0,
+          stress: source.stress ?? CHECKIN_LIMITS.stress.defaultValue,
+        });
+
+        const hydrated: CheckinFormState = {
+          sleepHours: normalized.values.sleepHours,
+          sleepQuality: normalized.values.sleepQuality,
+          bedtimeMinutes: normalized.values.bedtimeMinutes,
+          wakeTimeMinutes: normalized.values.wakeTimeMinutes,
+          workout: normalized.values.workout,
+          deepWorkMin: normalized.values.deepWorkMin,
+          learningMin: normalized.values.learningMin,
+          moneyDelta: String(normalized.values.moneyDelta),
+          stress: normalized.values.stress,
+        };
+
+        initialFormRef.current = hydrated;
+        setBaseForm(hydrated);
+        setForm(hydrated);
+        setSleepHoursInput(String(hydrated.sleepHours));
+        setSleepQualityInput(String(hydrated.sleepQuality));
+      } catch {
+        // no-op: fallback to defaults
+      }
+    };
+
+    void loadExistingCheckin();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDate]);
 
   const applyYesterday = () => {
     setError(null);
@@ -288,6 +382,8 @@ export function DailyCheckinForm({ initialDateISO, activeProtocol = null, onSucc
       const snapshot = JSON.stringify(sanitizedForm);
       localStorage.setItem(getDateKey(selectedDate), snapshot);
       localStorage.setItem(`${STORAGE_PREFIX}.last`, snapshot);
+      initialFormRef.current = sanitizedForm;
+      setBaseForm(sanitizedForm);
 
       if (onSuccess) {
         onSuccess();
@@ -537,7 +633,7 @@ export function DailyCheckinForm({ initialDateISO, activeProtocol = null, onSucc
             </p>
             <p>Risk: {riskDirection === "up" ? "up" : riskDirection === "down" ? "down" : "stable"}</p>
             <p>
-              Life Score: {baseProjection.lifeScore.toFixed(1)} {"->"} {projected.lifeScore.toFixed(1)}
+              Life Score: {displayBaseLifeScore.toFixed(1)} {"->"} {displayProjectedLifeScore.toFixed(1)}
             </p>
           </div>
         )}
