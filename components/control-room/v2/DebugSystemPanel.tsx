@@ -30,6 +30,10 @@ type DebugSystemPanelProps = {
   integrity: string;
   selectedDate: string;
   renderedDataDate: string;
+  operationalDate: string;
+  hasCheckinForOperationalDate: boolean;
+  checkinMode: "create" | "edit";
+  newlyUnlockedMilestone: "—" | "Day 3" | "Day 5" | "Day 7";
   onPrevDay: () => void;
   onToday: () => void;
   onNextDay: () => void;
@@ -151,6 +155,10 @@ export function DebugSystemPanel(props: DebugSystemPanelProps) {
             {row("next allowed timestamp", props.nextAllowedTimestamp)}
             {row("canCheckInNow", props.canCheckInNow)}
             {row("countdown", props.countdownLabel)}
+            {row("operational date", props.operationalDate)}
+            {row("has check-in for operational date", props.hasCheckinForOperationalDate)}
+            {row("check-in mode", props.checkinMode)}
+            {row("newly unlocked milestone", props.newlyUnlockedMilestone)}
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

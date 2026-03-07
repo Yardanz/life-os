@@ -7,7 +7,7 @@ import { formatDateOnly, toUtcDateOnly } from "@/lib/api/date";
 import { ensureUserWithPlan } from "@/lib/api/plan";
 import { requireWritableMode } from "@/lib/demoMode";
 import { CHECKIN_LIMITS, normalizeCheckinCore } from "@/lib/checkinLimits";
-import { clampTzOffsetMinutes, DEFAULT_TZ_OFFSET_MINUTES, getDayKeyAtOffset } from "@/lib/date/dayKey";
+import { clampTzOffsetMinutes, computeNextCheckinCountdown, DEFAULT_TZ_OFFSET_MINUTES, getDayKeyAtOffset } from "@/lib/date/dayKey";
 import { prisma } from "@/lib/prisma";
 import { incrementCalibrationCheckins } from "@/lib/setup/userSetup";
 import { recalculateDay } from "@/lib/services/recalculateDay";
@@ -167,6 +167,17 @@ export async function POST(request: Request) {
       noteText: payload.notes ?? null,
     };
 
+    const existingCheckin = await prisma.dailyCheckIn.findUnique({
+      where: {
+        userId_date: {
+          userId: user.id,
+          date,
+        },
+      },
+      select: { id: true },
+    });
+    const createdNewCheckin = !existingCheckin;
+
     await prisma.$transaction(async (tx) => {
       await tx.dailyCheckIn.upsert({
         where: {
@@ -207,6 +218,31 @@ export async function POST(request: Request) {
     } catch {
       setupState = null;
     }
+    const [totalCompletedCheckins, operationalDayCheckin] = await Promise.all([
+      prisma.dailyCheckIn.count({ where: { userId: user.id } }),
+      prisma.dailyCheckIn.findUnique({
+        where: {
+          userId_date: {
+            userId: user.id,
+            date: toUtcDateOnly(getDayKeyAtOffset(new Date(), tzOffsetMinutes)),
+          },
+        },
+        select: { id: true },
+      }),
+    ]);
+    const onboardingProgressCheckins = Math.max(0, Math.min(7, totalCompletedCheckins));
+    const newlyUnlockedMilestone =
+      createdNewCheckin && (totalCompletedCheckins === 3 || totalCompletedCheckins === 5 || totalCompletedCheckins === 7)
+        ? (totalCompletedCheckins as 3 | 5 | 7)
+        : null;
+    const hasCheckinForOperationalDate = Boolean(operationalDayCheckin);
+    const operationalDate = getDayKeyAtOffset(new Date(), tzOffsetMinutes);
+    const countdown = hasCheckinForOperationalDate ? computeNextCheckinCountdown(new Date(), tzOffsetMinutes) : null;
+    const nextCheckinAt =
+      countdown == null
+        ? null
+        : new Date(new Date().getTime() + (countdown.hours * 60 + countdown.minutes) * 60_000).toISOString();
+
     recordEvent("checkin_saved");
 
     return NextResponse.json(
@@ -221,6 +257,16 @@ export async function POST(request: Request) {
           lifeScore: recalculated.lifeScore,
           plan: user.plan,
           setupState,
+          checkinStatus: {
+            operationalDate,
+            hasCheckinForOperationalDate,
+            mode: hasCheckinForOperationalDate ? "edit" : "create",
+            canCheckinNow: !hasCheckinForOperationalDate,
+            nextCheckinAt,
+            totalCompletedCheckins,
+            onboardingProgressCheckins,
+            newlyUnlockedMilestone,
+          },
         },
       },
       { status: 200 }

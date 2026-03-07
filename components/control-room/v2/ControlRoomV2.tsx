@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import type { ControlRoomDashboardProps } from "@/components/control-room/ControlRoomDashboard";
 import { CheckInModal } from "@/components/checkin/CheckInModal";
+import type { CheckinSaveResult } from "@/components/checkin/DailyCheckinForm";
 import { ProjectionScenarioChart } from "@/components/control-room/ProjectionScenarioChart";
 import { DeleteAccountModal } from "@/components/control-room/DeleteAccountModal";
 import { ExportSystemLogModal } from "@/components/control-room/ExportSystemLogModal";
@@ -222,6 +223,7 @@ export function ControlRoomV2({
   const preSubmitCheckinCountRef = useRef<number>(0);
   const pendingMilestoneCheckRef = useRef<number | null>(null);
   const autoOpenedMilestonesRef = useRef<Set<EvolutionDay>>(new Set());
+  const [latestUnlockedMilestone, setLatestUnlockedMilestone] = useState<EvolutionDay | null>(null);
 
   useEffect(() => {
     const detectedOffset = -new Date().getTimezoneOffset();
@@ -476,16 +478,16 @@ export function ControlRoomV2({
     [welcomeModalSaving]
   );
 
-  const handleWelcomeContinue = useCallback(() => {
+  const handleWelcomeContinue = () => {
     if (setupState?.welcomeModalSeen || welcomeModalAcknowledged) {
       setWelcomeModalError(null);
       setWelcomeModalOpen(false);
       return;
     }
     void completeWelcomeFlow();
-  }, [completeWelcomeFlow, setupState?.welcomeModalSeen, welcomeModalAcknowledged]);
+  };
 
-  const handleWelcomeBeginCheckin = useCallback(() => {
+  const handleWelcomeBeginCheckin = () => {
     if (setupState?.welcomeModalSeen || welcomeModalAcknowledged) {
       setWelcomeModalError(null);
       setWelcomeModalOpen(false);
@@ -493,14 +495,45 @@ export function ControlRoomV2({
       return;
     }
     void completeWelcomeFlow(() => openCheckInModal(todayDayKey));
-  }, [completeWelcomeFlow, openCheckInModal, setupState?.welcomeModalSeen, todayDayKey, welcomeModalAcknowledged]);
-  const handleOpenTutorial = useCallback(() => {
+  };
+  const handleOpenTutorial = () => {
     setWelcomeModalError(null);
     setWelcomeModalOpen(true);
-  }, []);
+  };
 
-  const handleCheckInSaved = () => {
-    pendingMilestoneCheckRef.current = preSubmitCheckinCountRef.current;
+  const handleCheckInSaved = (result: CheckinSaveResult) => {
+    const unlockedDay = result.newlyUnlockedMilestone;
+    if (unlockedDay) {
+      setLatestUnlockedMilestone(unlockedDay);
+      if (!autoOpenedMilestonesRef.current.has(unlockedDay)) {
+        autoOpenedMilestonesRef.current.add(unlockedDay);
+        if (unlockedDay === 7) {
+          setUnlockNotice("System fully stabilized: Full diagnostics available (depth depends on plan entitlement)");
+        } else if (unlockedDay === 5) {
+          setUnlockNotice("New capability unlocked: Partial diagnostics");
+        } else {
+          setUnlockNotice("New capability unlocked: Trajectory");
+        }
+        openEvolutionModal("base", unlockedDay, true, {
+          mode: "auto",
+          includeOperatorSection: operatorPlanEnabled,
+        });
+      }
+      pendingMilestoneCheckRef.current = null;
+    } else {
+      pendingMilestoneCheckRef.current = preSubmitCheckinCountRef.current;
+    }
+
+    setSetupState((prev) =>
+      prev
+        ? {
+            ...prev,
+            totalCheckins: result.totalCompletedCheckins,
+            calibrationCheckinsDone: result.totalCompletedCheckins,
+            onboardingProgressCheckins: result.onboardingProgressCheckins,
+          }
+        : prev
+    );
     const targetDate = checkInModalDate ?? selectedDate;
     setResetModalOpen(false);
     setCheckInModalOpen(false);
@@ -626,7 +659,7 @@ export function ControlRoomV2({
     };
 
     void loadProjection();
-  }, [data?.systemMetrics.risk, selectedDate, showAdvancedTrajectory, userId]);
+  }, [data, data?.systemMetrics.risk, selectedDate, showAdvancedTrajectory, userId]);
 
   const applyCustomProjection = useCallback(async () => {
     if (!showAdvancedTrajectory || !data) return;
@@ -775,9 +808,11 @@ export function ControlRoomV2({
       : confidencePct >= 60
         ? "Model baseline stabilizing"
         : "Calibration in progress";
-  const actionDate = selectedDate;
-  const actionDateIsToday = actionDate === todayDayKey;
-  const isHistoricalView = !actionDateIsToday;
+  const operationalDate = todayDayKey;
+  const hasCheckinForOperationalDate = Boolean(data?.todayCheckInExists);
+  const checkinMode: "create" | "edit" = hasCheckinForOperationalDate ? "edit" : "create";
+  const actionDate = operationalDate;
+  const isHistoricalView = selectedDate !== todayDayKey;
   const showEvolutionBlock = totalCheckins <= 7;
   const remainingWindowLabel =
     nextCheckinAvailability.msRemaining == null
@@ -795,24 +830,34 @@ export function ControlRoomV2({
     : remainingWindowLabel
       ? `Next window in ${remainingWindowLabel}`
       : "Next window pending";
-  const primaryActionLabel = actionDateIsToday
-    ? data?.todayCheckInExists
-      ? "Update today's check-in"
-      : "Record today's check-in"
-    : `Record check-in for ${actionDate}`;
+  const primaryActionLabel = checkinMode === "edit" ? "Update today's check-in" : "Record today's check-in";
   const nextActionTitle = isHistoricalView
     ? "Review current system state"
-    : nextCheckinAvailability.availableNow
-      ? "Record today's check-in"
-      : "Next check-in not available yet";
+    : hasCheckinForOperationalDate
+      ? "Today's check-in already recorded"
+      : nextCheckinAvailability.availableNow
+        ? "Record today's check-in"
+        : "Next check-in not available yet";
   const nextActionDescription = isHistoricalView
     ? "New check-ins apply to the current operational day."
-    : nextCheckinAvailability.availableNow
-      ? "Update system state with current signals and refresh guidance."
-      : remainingWindowLabel
-        ? `Next check-in opens in ${remainingWindowLabel}. Latest confirmed state remains active until the next window.`
-        : "Latest confirmed state remains active until the next check-in window opens.";
-  const nextActionStatusItems = [nextWindowStatus];
+    : hasCheckinForOperationalDate
+      ? remainingWindowLabel
+        ? `Current operational day already has a check-in. Next check-in opens in ${remainingWindowLabel}.`
+        : "Current operational day already has a check-in. Next check-in window is pending."
+      : nextCheckinAvailability.availableNow
+        ? "Update system state with current signals and refresh guidance."
+        : remainingWindowLabel
+          ? `Next check-in opens in ${remainingWindowLabel}. Latest confirmed state remains active until the next window.`
+          : "Latest confirmed state remains active until the next check-in window opens.";
+  const nextActionStatusItems = [`Operational date: ${operationalDate}`, `Mode: ${checkinMode.toUpperCase()}`, nextWindowStatus];
+  const latestUnlockedMilestoneLabel: "—" | "Day 3" | "Day 5" | "Day 7" =
+    latestUnlockedMilestone === 3
+      ? "Day 3"
+      : latestUnlockedMilestone === 5
+        ? "Day 5"
+        : latestUnlockedMilestone === 7
+          ? "Day 7"
+          : "—";
   const openAntiChaosControls = () => {
     if (typeof document === "undefined") return;
     const target = document.getElementById("advanced-trajectory-controls");
@@ -935,6 +980,10 @@ export function ControlRoomV2({
                 nextAllowedTimestamp={nextCheckinAvailability.nextAvailableAt ? nextCheckinAvailability.nextAvailableAt.toISOString() : "—"}
                 canCheckInNow={nextCheckinAvailability.availableNow}
                 countdownLabel={countdownLabel}
+                operationalDate={operationalDate}
+                hasCheckinForOperationalDate={hasCheckinForOperationalDate}
+                checkinMode={checkinMode}
+                newlyUnlockedMilestone={latestUnlockedMilestoneLabel}
                 lifeScore="—"
                 guardrailState="—"
                 protocolState={activeProtocol?.guardrailState ?? "—"}
@@ -1146,6 +1195,10 @@ export function ControlRoomV2({
               nextAllowedTimestamp={nextCheckinAvailability.nextAvailableAt ? nextCheckinAvailability.nextAvailableAt.toISOString() : "—"}
               canCheckInNow={nextCheckinAvailability.availableNow}
               countdownLabel={countdownLabel}
+              operationalDate={operationalDate}
+              hasCheckinForOperationalDate={hasCheckinForOperationalDate}
+              checkinMode={checkinMode}
+              newlyUnlockedMilestone={latestUnlockedMilestoneLabel}
               lifeScore={typeof data.snapshot.lifeScore === "number" ? data.snapshot.lifeScore.toFixed(1) : "—"}
               guardrailState={data.guardrail.label ?? "—"}
               protocolState={activeProtocol?.guardrailState ?? "—"}

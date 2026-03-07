@@ -1,6 +1,6 @@
 "use client";
 
-import { DailyCheckinForm } from "@/components/checkin/DailyCheckinForm";
+import { DailyCheckinForm, type CheckinSaveResult } from "@/components/checkin/DailyCheckinForm";
 import { ModalShell } from "@/components/ui/ModalShell";
 
 type CheckInModalProps = {
@@ -14,7 +14,7 @@ type CheckInModalProps = {
     constraints: Array<{ label: string; value: string; severity: "hard" | "soft" }>;
   } | null;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (result: CheckinSaveResult) => void;
 };
 
 export function CheckInModal({
@@ -49,7 +49,7 @@ export function CheckInModal({
               startWithYesterday={startWithYesterday}
               baselineLifeScore={baselineLifeScore}
               activeProtocol={activeProtocol}
-              onSuccess={() => requestClose(onSaved)}
+              onSuccess={(result) => requestClose(() => onSaved(result))}
             />
           </div>
         </div>

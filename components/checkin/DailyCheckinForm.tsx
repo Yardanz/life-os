@@ -49,7 +49,18 @@ type DailyCheckinFormProps = {
     horizonHours: number;
     constraints: Array<{ label: string; value: string; severity: "hard" | "soft" }>;
   } | null;
-  onSuccess?: () => void;
+  onSuccess?: (result: CheckinSaveResult) => void;
+};
+
+export type CheckinSaveResult = {
+  operationalDate: string;
+  hasCheckinForOperationalDate: boolean;
+  mode: "create" | "edit";
+  canCheckinNow: boolean;
+  nextCheckinAt: string | null;
+  totalCompletedCheckins: number;
+  onboardingProgressCheckins: number;
+  newlyUnlockedMilestone: 3 | 5 | 7 | null;
 };
 
 function clampNumber(value: number, min: number, max: number): number {
@@ -393,9 +404,19 @@ export function DailyCheckinForm({
         }),
       });
 
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        throw new Error(response.status === 400 ? "Invalid input." : payload.error ?? "Data unavailable.");
+      const payload = (await response.json()) as
+        | {
+            ok: true;
+            data?: {
+              checkinStatus?: CheckinSaveResult;
+            };
+          }
+        | {
+            ok?: false;
+            error?: string;
+          };
+      if (!response.ok || !("ok" in payload) || !payload.ok) {
+        throw new Error(response.status === 400 ? "Invalid input." : ("error" in payload ? payload.error : undefined) ?? "Data unavailable.");
       }
 
       const snapshot = JSON.stringify(sanitizedForm);
@@ -405,7 +426,18 @@ export function DailyCheckinForm({
       setBaseForm(sanitizedForm);
 
       if (onSuccess) {
-        onSuccess();
+        onSuccess(
+          payload.data?.checkinStatus ?? {
+            operationalDate: selectedDate,
+            hasCheckinForOperationalDate: true,
+            mode: "edit",
+            canCheckinNow: false,
+            nextCheckinAt: null,
+            totalCompletedCheckins: checkinsDone,
+            onboardingProgressCheckins: Math.max(0, Math.min(7, checkinsDone)),
+            newlyUnlockedMilestone: null,
+          }
+        );
         return;
       }
 

@@ -173,10 +173,14 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
 
   if (!open || !isMounted) return null;
 
-  const content =
-    typeof children === "function"
-      ? (children as (args: ModalShellRenderArgs) => ReactNode)({ requestClose })
-      : children;
+  let content: ReactNode;
+  if (typeof children === "function") {
+    const renderChildren = children as (args: ModalShellRenderArgs) => ReactNode;
+    // eslint-disable-next-line react-hooks/refs
+    content = renderChildren({ requestClose });
+  } else {
+    content = children;
+  }
 
   return createPortal(
     <div className="fixed inset-0 z-[120] flex items-center justify-center px-4">

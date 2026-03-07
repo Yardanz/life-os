@@ -254,19 +254,15 @@ export function OnboardingTutorialModal({
   onBeginCheckin,
 }: OnboardingTutorialModalProps) {
   const [step, setStep] = useState(0);
-
-  useEffect(() => {
-    if (!open) {
-      setStep(0);
-      return;
-    }
+  const handleShellClose = () => {
     setStep(0);
-  }, [open]);
+    onClose();
+  };
 
   const isLast = step === TOTAL_STEPS - 1;
 
   return (
-    <ModalShell open={open} onClose={onClose} ariaLabel="LIFE OS onboarding tutorial" panelClassName="max-w-5xl p-5 sm:p-6">
+    <ModalShell open={open} onClose={handleShellClose} ariaLabel="LIFE OS onboarding tutorial" panelClassName="max-w-5xl p-5 sm:p-6">
       {({ requestClose }) => (
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-3">
