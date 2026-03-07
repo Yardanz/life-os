@@ -540,8 +540,9 @@ export function ControlRoomV2({
     setCheckInModalDate(null);
     setCheckInModalUseYesterday(false);
     setReloadKey((value) => value + 1);
-    setDateInUrl(targetDate);
-    router.refresh();
+    if (targetDate !== selectedDate) {
+      setDateInUrl(targetDate);
+    }
   };
 
   const handleResetDone = () => {
