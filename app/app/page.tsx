@@ -8,7 +8,7 @@ import type { ProtocolObject } from "@/lib/engine/protocolRules";
 import { prisma } from "@/lib/prisma";
 import { fetchActiveProtocol } from "@/lib/protocol/fetchActiveProtocol";
 import { ensureLiveDemoData } from "@/lib/demo/seedLiveDemo";
-import { DEMO_MODE_COOKIE, DEMO_MODE_COOKIE_VALUE, LIVE_DEMO_USER_ID } from "@/lib/demoMode";
+import { DEMO_MODE_COOKIE, DEMO_MODE_COOKIE_VALUE, LIVE_DEMO_USER_ID, isDemoModeEnabled } from "@/lib/demoMode";
 import { canAccessApp } from "@/lib/softLaunch";
 import { startTiming } from "@/lib/observability/timing";
 import { ControlRoomV2 } from "@/components/control-room/v2/ControlRoomV2";
@@ -28,7 +28,8 @@ export default async function AppControlRoomPage({ searchParams }: AppControlRoo
   const [session, cookieStore] = await Promise.all([sessionPromise, cookiePromise]);
   sessionTimer.end({ hasSession: Boolean(session?.user?.id) });
 
-  const demoMode = cookieStore.get(DEMO_MODE_COOKIE)?.value === DEMO_MODE_COOKIE_VALUE;
+  const demoModeEnabled = isDemoModeEnabled();
+  const demoMode = demoModeEnabled && cookieStore.get(DEMO_MODE_COOKIE)?.value === DEMO_MODE_COOKIE_VALUE;
   if (!session?.user?.id) {
     redirect("/signin?callbackUrl=/app/live");
   }

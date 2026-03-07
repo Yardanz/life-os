@@ -6,6 +6,10 @@ import {
   LIVE_DEMO_USER_ID,
 } from "@/lib/demo/constants";
 
+function isDemoModeEnabled(): boolean {
+  return String(process.env.LIFEOS_DEMO_MODE ?? "").toLowerCase() === "true";
+}
+
 function parseCookieHeader(cookieHeader: string | null): Record<string, string> {
   if (!cookieHeader) return {};
   const pairs = cookieHeader.split(";").map((part) => part.trim()).filter(Boolean);
@@ -21,6 +25,7 @@ function parseCookieHeader(cookieHeader: string | null): Record<string, string> 
 }
 
 export function isDemoModeRequest(request: Request): boolean {
+  if (!isDemoModeEnabled()) return false;
   const cookies = parseCookieHeader(request.headers.get("cookie"));
   return cookies[DEMO_MODE_COOKIE] === DEMO_MODE_COOKIE_VALUE;
 }
@@ -31,4 +36,4 @@ export function requireWritableMode(request: Request): void {
   }
 }
 
-export { DEMO_MODE_COOKIE, DEMO_MODE_COOKIE_VALUE, DEMO_MODE_MAX_AGE_SECONDS, LIVE_DEMO_USER_ID };
+export { DEMO_MODE_COOKIE, DEMO_MODE_COOKIE_VALUE, DEMO_MODE_MAX_AGE_SECONDS, LIVE_DEMO_USER_ID, isDemoModeEnabled };
