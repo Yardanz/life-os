@@ -2,7 +2,6 @@
 
 import {
   CartesianGrid,
-  Label,
   Line,
   LineChart,
   ReferenceArea,
@@ -25,6 +24,7 @@ type ProjectionChartViewProps = {
   nowX: number;
   endLabels: EndLabel[];
   impactHorizonDays?: number | null;
+  matchTrajectoryStyle?: boolean;
 };
 
 const STROKE_MAP: Record<ScenarioKey, string> = {
@@ -45,15 +45,44 @@ export function ProjectionChartView({
   nowX,
   endLabels,
   impactHorizonDays = null,
+  matchTrajectoryStyle = false,
 }: ProjectionChartViewProps) {
+  const minMax = (() => {
+    const values = rows.flatMap((row) =>
+      visibleScenarios
+        .map((key) => row[key])
+        .filter((value): value is number => typeof value === "number" && Number.isFinite(value))
+    );
+    if (values.length === 0) {
+      return { min: 0, max: 100 };
+    }
+    return { min: Math.min(...values), max: Math.max(...values) };
+  })();
+  const dynamicMin = Math.max(0, Math.floor((minMax.min - 10) / 5) * 5);
+  const dynamicMax = Math.min(100, Math.ceil((minMax.max + 10) / 5) * 5);
+  const yMin = dynamicMax <= dynamicMin ? Math.max(0, dynamicMin - 20) : dynamicMin;
+  const yMax = dynamicMax <= dynamicMin ? Math.min(100, dynamicMax + 20) : dynamicMax;
+  const yTicksDynamic = Array.from({ length: 5 }, (_, index) => {
+    const ratio = index / 4;
+    const value = yMin + (yMax - yMin) * ratio;
+    return Math.round(value * 10) / 10;
+  });
+
   const zones = METRIC_ZONES[metric];
   const zoneBoundaries = zones.slice(1).map((zone) => zone.from);
 
   return (
-    <div className="h-64 w-full rounded-lg border border-zinc-800 bg-zinc-950/70 p-2">
+    <div className={`h-64 w-full rounded-lg border border-zinc-800 bg-zinc-950/70 ${matchTrajectoryStyle ? "p-3" : "p-2"}`}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={rows} margin={{ top: 14, right: 106, bottom: 20, left: 6 }}>
-          {impactHorizonDays ? (
+        <LineChart
+          data={rows}
+          margin={
+            matchTrajectoryStyle
+              ? { top: 20, right: 24, bottom: 52, left: 24 }
+              : { top: 14, right: 106, bottom: 20, left: 6 }
+          }
+        >
+          {!matchTrajectoryStyle && impactHorizonDays ? (
             <ReferenceArea
               x1={0}
               x2={Math.max(0, impactHorizonDays - 1)}
@@ -64,7 +93,8 @@ export function ProjectionChartView({
               strokeOpacity={0}
             />
           ) : null}
-          {zones.map((zone) => (
+          {!matchTrajectoryStyle
+            ? zones.map((zone) => (
             <ReferenceArea
               key={`${zone.label}-${zone.from}`}
               x1={-0.5}
@@ -75,8 +105,10 @@ export function ProjectionChartView({
               fillOpacity={zone.opacity}
               strokeOpacity={0}
             />
-          ))}
-          {zoneBoundaries.map((y) => (
+              ))
+            : null}
+          {!matchTrajectoryStyle
+            ? zoneBoundaries.map((y) => (
             <ReferenceLine
               key={`zone-threshold-${y}`}
               y={y}
@@ -85,9 +117,15 @@ export function ProjectionChartView({
               strokeDasharray="2 6"
               strokeWidth={1}
             />
-          ))}
+              ))
+            : null}
 
-          <CartesianGrid stroke="#3f3f46" strokeDasharray="2 4" opacity={0.25} vertical={false} />
+          <CartesianGrid
+            stroke={matchTrajectoryStyle ? "rgb(39 39 42)" : "#3f3f46"}
+            strokeDasharray={matchTrajectoryStyle ? undefined : "2 4"}
+            opacity={matchTrajectoryStyle ? 1 : 0.25}
+            vertical={false}
+          />
           <XAxis
             type="number"
             dataKey="dayIndex"
@@ -97,24 +135,23 @@ export function ProjectionChartView({
             axisLine={{ stroke: "#52525b", opacity: 0.35 }}
             tickLine={false}
             tick={{ fill: "#71717a", fontSize: 11 }}
+            tickMargin={matchTrajectoryStyle ? 14 : 8}
           />
           <YAxis
             type="number"
-            domain={[0, 100]}
-            ticks={Y_TICKS}
+            domain={matchTrajectoryStyle ? [yMin, yMax] : [0, 100]}
+            ticks={matchTrajectoryStyle ? yTicksDynamic : Y_TICKS}
             axisLine={{ stroke: "#52525b", opacity: 0.35 }}
             tickLine={false}
             tick={{ fill: "#71717a", fontSize: 11 }}
-            width={34}
+            width={matchTrajectoryStyle ? 52 : 34}
           />
           <Tooltip
             cursor={{ stroke: "#71717a", strokeOpacity: 0.4, strokeDasharray: "3 3" }}
             content={<ProjectionChartTooltip metric={metric} />}
           />
 
-          <ReferenceLine x={nowX} stroke="#71717a" strokeDasharray="2 5" strokeOpacity={0.65} strokeWidth={1}>
-            <Label value="NOW" position="insideTopLeft" fill="#a1a1aa" fontSize={9} />
-          </ReferenceLine>
+          {!matchTrajectoryStyle ? <ReferenceLine x={nowX} stroke="#71717a" strokeDasharray="2 5" strokeOpacity={0.65} strokeWidth={1} /> : null}
 
           {visibleScenarios.includes("baseline") ? (
             <Line type="monotone" dataKey="baseline" stroke={STROKE_MAP.baseline} {...DOTLESS_LINE} />

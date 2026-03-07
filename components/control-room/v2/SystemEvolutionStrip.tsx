@@ -1,25 +1,44 @@
 ﻿"use client";
 
+import { useState } from "react";
+import type { EvolutionDay, EvolutionTrack } from "@/components/control-room/v2/SystemEvolutionModal";
+
 type SystemEvolutionStripProps = {
-  currentDay: 1 | 3 | 5 | 7;
-  completedCheckins: number;
+  currentDay: EvolutionDay;
+  onboardingProgressCheckins: number;
+  nextUnlockDay: 3 | 5 | 7 | null;
+  operatorPlanEnabled: boolean;
+  collapsible?: boolean;
+  onOpenTutorial?: () => void;
+  onStageClick: (track: EvolutionTrack, day: EvolutionDay, unlocked: boolean) => void;
 };
 
 type StageItem = {
-  day: 1 | 3 | 5 | 7;
+  day: EvolutionDay;
   label: string;
 };
 
-const STAGES: StageItem[] = [
+const baseEvolutionMilestones: StageItem[] = [
   { day: 1, label: "Core status" },
   { day: 3, label: "Trajectory" },
-  { day: 5, label: "Advanced controls" },
+  { day: 5, label: "Partial diagnostics" },
   { day: 7, label: "Full diagnostics" },
 ];
 
-function CheckIcon() {
+const operatorDepthMilestones: StageItem[] = [
+  { day: 1, label: "Supporter access" },
+  { day: 3, label: "Advanced trajectory" },
+  { day: 5, label: "Deep stability signals" },
+  { day: 7, label: "Deep diagnostics" },
+];
+
+const utilityButtonClass =
+  "inline-flex min-h-8 items-center justify-center rounded-md border border-zinc-700 bg-zinc-950/90 px-3.5 py-1.5 text-xs font-medium tracking-[0.01em] text-zinc-100 transition hover:border-zinc-500 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 active:translate-y-[1px]";
+
+function CheckIcon({ tone = "emerald" }: { tone?: "emerald" | "amber" }) {
+  const color = tone === "amber" ? "text-amber-300" : "text-emerald-300";
   return (
-    <svg viewBox="0 0 16 16" aria-hidden className="h-3.5 w-3.5 text-emerald-300">
+    <svg viewBox="0 0 16 16" aria-hidden className={`h-3.5 w-3.5 ${color}`}>
       <path d="M6.2 10.9 3.5 8.2l-1 1 3.7 3.7L13.5 5.6l-1-1z" fill="currentColor" />
     </svg>
   );
@@ -33,36 +52,178 @@ function LockIcon() {
   );
 }
 
-export function SystemEvolutionStrip({ currentDay, completedCheckins }: SystemEvolutionStripProps) {
+type RenderRowParams = {
+  title: string;
+  track: EvolutionTrack;
+  stages: StageItem[];
+  onboardingProgressCheckins: number;
+  currentDay: EvolutionDay;
+  operatorPlanEnabled: boolean;
+  onStageClick: (track: EvolutionTrack, day: EvolutionDay, unlocked: boolean) => void;
+  tone: "base" | "operator";
+};
+
+function renderRow({
+  title,
+  track,
+  stages,
+  onboardingProgressCheckins,
+  currentDay,
+  operatorPlanEnabled,
+  onStageClick,
+  tone,
+}: RenderRowParams) {
+  const isOperator = tone === "operator";
+
   return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 sm:p-6">
-      <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">SYSTEM EVOLUTION</p>
-      <div className="mt-4 grid gap-2 sm:grid-cols-4">
-        {STAGES.map((stage) => {
-          const complete = completedCheckins >= stage.day;
-          const current = currentDay === stage.day;
-          const future = !complete && !current;
+    <div>
+      <p className={`text-xs uppercase tracking-[0.2em] ${isOperator ? "text-amber-300/70" : "text-zinc-500"}`}>{title}</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-4">
+        {stages.map((stage) => {
+          const baseUnlocked = onboardingProgressCheckins >= stage.day || stage.day === 1;
+          const unlocked = isOperator ? baseUnlocked && operatorPlanEnabled : baseUnlocked;
+          const current = !isOperator && currentDay === stage.day;
+          const future = !unlocked && !current;
+
+          const className = isOperator
+            ? unlocked
+              ? "border-amber-500/40 bg-amber-500/10 text-amber-100"
+              : "border-zinc-800 bg-zinc-950/70 text-zinc-400"
+            : current
+              ? "border-cyan-400/60 bg-cyan-500/10 text-cyan-100"
+              : unlocked
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-100"
+                : "border-zinc-800 bg-zinc-950/70 text-zinc-400";
+
           return (
-            <div
-              key={stage.day}
-              className={[
-                "rounded-lg border px-3 py-2 text-xs",
-                current
-                  ? "border-cyan-400/60 bg-cyan-500/10 text-cyan-100"
-                  : complete
-                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-100"
-                    : "border-zinc-800 bg-zinc-950/70 text-zinc-400",
-              ].join(" ")}
+            <button
+              type="button"
+              key={`${track}-${stage.day}`}
+              onClick={() => onStageClick(track, stage.day, unlocked)}
+              className={`rounded-lg border px-3 py-2 text-left text-xs transition ${isOperator ? "hover:border-amber-400/60" : "hover:border-cyan-400/50"} ${className}`}
             >
               <div className="flex items-center justify-between gap-2">
                 <p className="font-medium">Day {stage.day}</p>
-                {complete ? <CheckIcon /> : future ? <LockIcon /> : <span className="h-3.5 w-3.5 rounded-full border border-cyan-300/70" />}
+                {unlocked ? (
+                  <CheckIcon tone={isOperator ? "amber" : "emerald"} />
+                ) : future ? (
+                  <LockIcon />
+                ) : (
+                  <span className={`h-3.5 w-3.5 rounded-full border ${isOperator ? "border-amber-300/70" : "border-cyan-300/70"}`} />
+                )}
               </div>
               <p className="mt-1">{stage.label}</p>
               {future ? <p className="mt-1 text-[11px] text-zinc-500">Locked</p> : null}
-            </div>
+            </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+export function SystemEvolutionStrip({
+  currentDay,
+  onboardingProgressCheckins,
+  nextUnlockDay,
+  operatorPlanEnabled,
+  collapsible = false,
+  onOpenTutorial,
+  onStageClick,
+}: SystemEvolutionStripProps) {
+  const [collapsed, setCollapsed] = useState(false);
+  const done = Math.max(0, Math.min(7, onboardingProgressCheckins));
+
+  if (collapsed && collapsible) {
+    return (
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/70 px-4 py-2.5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">System Evolution</p>
+            <p className="mt-0.5 text-xs text-zinc-400">Day {currentDay} - onboarding {done}/7</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2.5">
+            {onOpenTutorial ? (
+              <button
+                type="button"
+                onClick={onOpenTutorial}
+                className={utilityButtonClass}
+              >
+                Tutorial
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setCollapsed(false)}
+              className={utilityButtonClass}
+            >
+              Expand
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 sm:p-6">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">System Evolution</p>
+        <div className="flex shrink-0 items-center gap-2.5">
+          {onOpenTutorial ? (
+            <button
+              type="button"
+              onClick={onOpenTutorial}
+              className={utilityButtonClass}
+            >
+              Tutorial
+            </button>
+          ) : null}
+          {collapsible ? (
+            <button
+              type="button"
+              onClick={() => setCollapsed(true)}
+              className={utilityButtonClass}
+            >
+              Collapse
+            </button>
+          ) : null}
+        </div>
+      </div>
+      {renderRow({
+        title: "Base Track",
+        track: "base",
+        stages: baseEvolutionMilestones,
+        onboardingProgressCheckins,
+        currentDay,
+        operatorPlanEnabled,
+        onStageClick,
+        tone: "base",
+      })}
+
+      <div className="mt-5 border-t border-zinc-800/80 pt-4">
+        {renderRow({
+          title: "Operator Depth",
+          track: "operator",
+          stages: operatorDepthMilestones,
+          onboardingProgressCheckins,
+          currentDay,
+          operatorPlanEnabled,
+          onStageClick,
+          tone: "operator",
+        })}
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <p className="rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-300">
+          Onboarding progress: <span className="text-zinc-100">{done} / 7</span>
+        </p>
+        <p className="rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-300">
+          Next unlock: <span className="text-zinc-100">{nextUnlockDay ? `Day ${nextUnlockDay}` : "All unlocked"}</span>
+        </p>
+        <p className="rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-300">
+          Baseline stabilization: <span className="text-zinc-100">{done} / 7</span>
+        </p>
       </div>
     </section>
   );

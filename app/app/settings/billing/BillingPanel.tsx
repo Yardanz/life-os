@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PLANS } from "@/lib/billing/config";
 import { getOperatorStatusLabel } from "@/lib/billing/statusLabel";
@@ -23,6 +24,7 @@ type BillingPanelProps = {
 };
 
 export function BillingPanel({ entitlement, orders }: BillingPanelProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState<null | "OPERATOR_MONTHLY" | "OPERATOR_YEARLY">(null);
   const [error, setError] = useState<string | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -59,9 +61,44 @@ export function BillingPanel({ entitlement, orders }: BillingPanelProps) {
     }
   };
 
+  const handleBack = () => {
+    if (typeof window === "undefined") {
+      router.push("/app");
+      return;
+    }
+
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    const referrer = document.referrer;
+    if (referrer) {
+      try {
+        const refUrl = new URL(referrer);
+        const currentOrigin = window.location.origin;
+        if (refUrl.origin === currentOrigin && refUrl.pathname !== window.location.pathname) {
+          router.push(`${refUrl.pathname}${refUrl.search}${refUrl.hash}`);
+          return;
+        }
+      } catch {
+        // no-op
+      }
+    }
+
+    router.push("/app");
+  };
+
   return (
     <main id="main-content" className="mx-auto min-h-screen w-full max-w-5xl px-4 py-8 text-zinc-100 sm:px-6">
       <header className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="inline-flex items-center rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500"
+        >
+          Back
+        </button>
         <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Billing</p>
         <h1 className="mt-2 text-2xl font-semibold text-zinc-100">Operator License</h1>
         <p className="mt-1 text-sm text-zinc-300">{statusLabel}</p>

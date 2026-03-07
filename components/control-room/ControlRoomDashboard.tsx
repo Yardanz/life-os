@@ -391,9 +391,11 @@ function SystemMetricBar({ label, value, hint, tone, tooltip, uninitialized = fa
 export type ControlRoomDashboardProps = {
   userId?: string;
   userEmail?: string | null;
+  authProvider?: string | null;
   demoMode?: boolean;
   appVersion?: string;
   supportEmail?: string | null;
+  controlRoomDebugEnabled?: boolean;
   initialSelectedDate?: string;
   latestCheckinDate?: string | null;
   initialActiveProtocol?: ProtocolRunRecord | null;
@@ -555,6 +557,7 @@ export function ControlRoomDashboard({
     } else {
       setCheckinUpdateNotice(null);
     }
+    setResetModalOpen(false);
     setCheckInModalOpen(false);
     setCheckInModalDate(null);
     setCheckinNotFoundDate(null);

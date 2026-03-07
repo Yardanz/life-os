@@ -6,6 +6,7 @@ import { LandingAuthOverlayController } from "@/components/auth/LandingAuthOverl
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PublicNavLinks } from "@/components/public/PublicNavLinks";
+import { BackNavButton } from "@/components/ui/BackNavButton";
 import { SYSTEM_VERSION } from "@/lib/version";
 
 type HealthPayload = {
@@ -59,6 +60,7 @@ export default function StatusPage() {
   return (
     <LifeOSBackground>
       <main id="main-content" className="mx-auto min-h-screen w-full max-w-6xl overflow-x-hidden px-4 py-8 text-zinc-100 sm:px-6">
+        <BackNavButton className="mb-4 inline-flex items-center rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500" />
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">LIFE OS</p>
@@ -78,15 +80,23 @@ export default function StatusPage() {
         <section className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-zinc-300">Public service signal</p>
-            <span
-              className={`rounded-full border px-3 py-1 text-xs ${
-                operational
-                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
-                  : "border-amber-500/40 bg-amber-500/10 text-amber-200"
-              }`}
-            >
-              {operational ? "Operational" : "Degraded"}
-            </span>
+            <div className="flex items-center gap-2">
+              <span
+                className={`rounded-full border px-3 py-1 text-xs ${
+                  operational
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+                    : "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                }`}
+              >
+                {operational ? "Operational" : "Degraded"}
+              </span>
+              <Link
+                href="/"
+                className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500"
+              >
+                Home
+              </Link>
+            </div>
           </div>
 
           <div className="mt-4 grid gap-2 text-sm text-zinc-300 sm:grid-cols-2">

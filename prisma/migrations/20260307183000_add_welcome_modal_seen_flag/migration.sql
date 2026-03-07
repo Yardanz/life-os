@@ -1,0 +1,2 @@
+ALTER TABLE "User"
+ADD COLUMN "welcomeModalSeen" BOOLEAN NOT NULL DEFAULT false;

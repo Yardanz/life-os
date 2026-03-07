@@ -7,6 +7,9 @@ function toConfidence(done: number, needed: number): number {
 
 export type UserSetupState = {
   onboardingCompleted: boolean;
+  welcomeModalSeen: boolean;
+  totalCheckins: number;
+  onboardingProgressCheckins: number;
   calibrationCheckinsDone: number;
   calibrationCheckinsNeeded: number;
   confidence: number;
@@ -51,26 +54,36 @@ export type DeleteAccountResult = {
 };
 
 export async function getUserSetupState(userId: string): Promise<UserSetupState> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      onboardingCompleted: true,
-      calibrationCheckinsDone: true,
-      calibrationCheckinsNeeded: true,
-    },
-  });
+  const [user, checkinsCount] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        onboardingCompleted: true,
+        welcomeModalSeen: true,
+        calibrationCheckinsDone: true,
+        calibrationCheckinsNeeded: true,
+      },
+    }),
+    prisma.dailyCheckIn.count({ where: { userId } }),
+  ]);
 
   if (!user) {
     throw new Error("User not found for setup state.");
   }
 
-  const done = Math.max(0, user.calibrationCheckinsDone);
+  // Real completed count: unbounded, used for all non-onboarding logic.
+  const totalDone = Math.max(0, checkinsCount);
   const needed = Math.max(1, user.calibrationCheckinsNeeded);
-  const confidence = toConfidence(done, needed);
+  // Onboarding progress only: bounded for Day 1/3/5/7 milestone UI.
+  const onboardingProgressCheckins = Math.max(0, Math.min(needed, totalDone));
+  const confidence = toConfidence(onboardingProgressCheckins, needed);
 
   return {
     onboardingCompleted: user.onboardingCompleted,
-    calibrationCheckinsDone: done,
+    welcomeModalSeen: user.welcomeModalSeen,
+    totalCheckins: totalDone,
+    onboardingProgressCheckins,
+    calibrationCheckinsDone: totalDone,
     calibrationCheckinsNeeded: needed,
     confidence,
     confidencePct: Math.round(confidence * 100),
@@ -81,6 +94,14 @@ export async function completeOnboarding(userId: string): Promise<UserSetupState
   await prisma.user.update({
     where: { id: userId },
     data: { onboardingCompleted: true },
+  });
+  return getUserSetupState(userId);
+}
+
+export async function completeWelcomeModal(userId: string): Promise<UserSetupState> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { welcomeModalSeen: true },
   });
   return getUserSetupState(userId);
 }
@@ -98,8 +119,7 @@ export async function incrementCalibrationCheckins(userId: string): Promise<User
     throw new Error("User not found for calibration update.");
   }
 
-  const needed = Math.max(1, user.calibrationCheckinsNeeded);
-  const nextDone = Math.min(checkinsCount, needed);
+  const nextDone = Math.max(0, checkinsCount);
 
   await prisma.user.update({
     where: { id: userId },
@@ -147,6 +167,7 @@ export async function resetUserData(userId: string): Promise<ResetUserDataResult
       where: { id: userId },
       data: {
         onboardingCompleted: false,
+        welcomeModalSeen: false,
         calibrationCheckinsDone: 0,
         calibrationCheckinsNeeded: 7,
         adaptiveRiskOffset: 0,

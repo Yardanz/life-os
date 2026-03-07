@@ -34,8 +34,8 @@ export function SystemDetailsModal({
         <div className="flex max-h-[85vh] flex-col">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">System Details</p>
-              <h2 className="mt-2 text-lg font-semibold text-zinc-100">Operator Data</h2>
+              <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">System Diagnostics</p>
+              <h2 className="mt-2 text-lg font-semibold text-zinc-100">Diagnostic Context</h2>
             </div>
             <button
               type="button"
@@ -47,6 +47,14 @@ export function SystemDetailsModal({
           </div>
 
           <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+            <section className="rounded-md border border-zinc-800 bg-zinc-950/70 p-3 text-sm text-zinc-300">
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Model explanation</p>
+              <p className="mt-1">{data.executiveSummary?.explanation ?? data.diagnosis?.summary ?? "Model explanation unavailable."}</p>
+              <p className="mt-1 text-xs text-zinc-400">
+                Primary driver: {data.executiveSummary?.primaryDriver ?? "—"} | Stability: {data.executiveSummary?.stabilityState ?? "—"}
+              </p>
+            </section>
+
             <section className="rounded-md border border-zinc-800 bg-zinc-950/70 p-3 text-sm text-zinc-300">
               <p className="text-xs uppercase tracking-wide text-zinc-500">Guardrail</p>
               <p className="mt-1">{data.guardrail.label}</p>
@@ -90,6 +98,29 @@ export function SystemDetailsModal({
                     {data.integrity.violations.length > 0 ? data.integrity.violations.join(", ") : "No active drift violations."}
                   </p>
                 </section>
+
+                {data.plan === "PRO" ? (
+                  <section className="rounded-md border border-zinc-800 bg-zinc-950/70 p-3 text-sm text-zinc-300">
+                    <p className="text-xs uppercase tracking-wide text-zinc-500">Diagnostic drivers</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-zinc-400">
+                      {(data.breakdown ? [...data.breakdown.energy, ...data.breakdown.focus, ...data.breakdown.risk] : [])
+                        .slice()
+                        .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+                        .slice(0, 5)
+                        .map((line) => (
+                          <li key={`${line.label}-${line.value}`}>
+                            {line.label}: {line.value >= 0 ? "+" : ""}
+                            {line.value.toFixed(1)}
+                          </li>
+                        ))}
+                    </ul>
+                  </section>
+                ) : (
+                  <section className="rounded-md border border-zinc-800 bg-zinc-950/70 p-3 text-sm text-zinc-300">
+                    <p className="text-xs uppercase tracking-wide text-zinc-500">Diagnostic drivers</p>
+                    <p className="mt-1 text-zinc-400">Detailed driver matrix is restricted to Operator plan.</p>
+                  </section>
+                )}
               </>
             ) : (
               <section className="rounded-md border border-zinc-800 bg-zinc-950/70 p-3 text-sm text-zinc-300">

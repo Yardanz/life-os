@@ -22,7 +22,6 @@ const BODY_SCROLL_LOCK_KEY = "__lifeosModalScrollLock";
 type BodyScrollLockState = {
   count: number;
   previousOverflow: string;
-  previousPaddingRight: string;
 };
 
 export function ModalShell({ open, onClose, ariaLabel, panelClassName, children }: ModalShellProps) {
@@ -30,12 +29,17 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
   const [isMounted, setIsMounted] = useState(false);
   const panelRef = useRef<HTMLElement | null>(null);
   const restoreTargetRef = useRef<HTMLElement | null>(null);
+  const closeTimerRef = useRef<number | null>(null);
 
   const requestClose = useCallback(
     (afterClose?: () => void) => {
       if (isClosing) return;
       setIsClosing(true);
-      window.setTimeout(() => {
+      if (closeTimerRef.current != null) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+      closeTimerRef.current = window.setTimeout(() => {
+        closeTimerRef.current = null;
         setIsClosing(false);
         afterClose?.();
         onClose();
@@ -47,6 +51,25 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (open) return;
+    setIsClosing(false);
+    if (closeTimerRef.current != null) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, [open]);
+
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current != null) {
+        window.clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -65,20 +88,11 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
       ({
         count: 0,
         previousOverflow: "",
-        previousPaddingRight: "",
       } satisfies BodyScrollLockState);
 
     if (current.count === 0) {
       current.previousOverflow = body.style.overflow;
-      current.previousPaddingRight = body.style.paddingRight;
-
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      const existingPaddingRight = Number.parseFloat(window.getComputedStyle(body).paddingRight || "0") || 0;
-
       body.style.overflow = "hidden";
-      if (scrollbarWidth > 0) {
-        body.style.paddingRight = `${existingPaddingRight + scrollbarWidth}px`;
-      }
     }
 
     current.count += 1;
@@ -91,7 +105,6 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
       active.count = Math.max(0, active.count - 1);
       if (active.count === 0) {
         body.style.overflow = active.previousOverflow;
-        body.style.paddingRight = active.previousPaddingRight;
         delete lockStore[BODY_SCROLL_LOCK_KEY];
       } else {
         lockStore[BODY_SCROLL_LOCK_KEY] = active;

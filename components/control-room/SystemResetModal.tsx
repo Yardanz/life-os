@@ -55,9 +55,7 @@ export function SystemResetModal({ open, onClose, onDone }: SystemResetModalProp
       }
       setSuccessMessage(payload.message ?? "System reset complete.");
       setStatus("done");
-      window.setTimeout(() => {
-        requestClose(onDone);
-      }, 350);
+      requestClose(onDone);
     } catch (resetError) {
       const message = resetError instanceof Error ? resetError.message : "Failed to reset system.";
       setError(message);

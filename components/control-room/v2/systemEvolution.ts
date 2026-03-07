@@ -2,27 +2,41 @@ import { computeNextCheckinCountdown, DEFAULT_TZ_OFFSET_MINUTES } from "@/lib/da
 
 export type SystemEvolutionStage = {
   currentDay: 1 | 3 | 5 | 7;
-  completedCheckins: number;
+  // Onboarding-only progress value. Intentionally bounded to the onboarding window.
+  onboardingProgressCheckins: number;
   nextUnlockDay: 3 | 5 | 7 | null;
   unlocked: {
     trajectory: boolean;
+    partialDiagnostics: boolean;
     advancedControls: boolean;
     fullDiagnostics: boolean;
   };
 };
 
+export type DiagnosticLevel = 0 | 1 | 2;
+
+export function getDiagnosticLevel(checkinCount: number): DiagnosticLevel {
+  const onboardingProgressCheckins = Number.isFinite(checkinCount) ? Math.max(0, Math.floor(checkinCount)) : 0;
+  if (onboardingProgressCheckins >= 7) return 2;
+  if (onboardingProgressCheckins >= 5) return 1;
+  return 0;
+}
+
 export function getSystemEvolutionStage(checkinCount: number): SystemEvolutionStage {
-  const completedCheckins = Number.isFinite(checkinCount) ? Math.max(0, Math.floor(checkinCount)) : 0;
-  const trajectory = completedCheckins >= 3;
-  const advancedControls = completedCheckins >= 5;
-  const fullDiagnostics = completedCheckins >= 7;
+  const onboardingProgressCheckins = Number.isFinite(checkinCount) ? Math.max(0, Math.floor(checkinCount)) : 0;
+  const trajectory = onboardingProgressCheckins >= 3;
+  const diagnosticLevel = getDiagnosticLevel(onboardingProgressCheckins);
+  const partialDiagnostics = diagnosticLevel >= 1;
+  // Advanced Controls are intentionally available from Day 1.
+  const advancedControls = true;
+  const fullDiagnostics = diagnosticLevel === 2;
 
   let currentDay: 1 | 3 | 5 | 7 = 1;
   let nextUnlockDay: 3 | 5 | 7 | null = 3;
   if (fullDiagnostics) {
     currentDay = 7;
     nextUnlockDay = null;
-  } else if (advancedControls) {
+  } else if (partialDiagnostics) {
     currentDay = 5;
     nextUnlockDay = 7;
   } else if (trajectory) {
@@ -32,10 +46,11 @@ export function getSystemEvolutionStage(checkinCount: number): SystemEvolutionSt
 
   return {
     currentDay,
-    completedCheckins,
+    onboardingProgressCheckins,
     nextUnlockDay,
     unlocked: {
       trajectory,
+      partialDiagnostics,
       advancedControls,
       fullDiagnostics,
     },

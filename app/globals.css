@@ -29,6 +29,8 @@ body {
 html {
   scroll-behavior: smooth;
   overflow-x: hidden;
+  overflow-y: scroll;
+  scrollbar-gutter: stable both-edges;
 }
 
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {

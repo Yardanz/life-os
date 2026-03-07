@@ -33,6 +33,7 @@ type ProjectionChartContainerProps = {
   isPro: boolean;
   customLoading?: boolean;
   showOverload?: boolean;
+  matchTrajectoryStyle?: boolean;
 };
 
 type UnifiedProjection = Record<ScenarioKey, UnifiedProjectionPoint[]>;
@@ -194,6 +195,7 @@ export function ProjectionChartContainer({
   isPro,
   customLoading = false,
   showOverload = true,
+  matchTrajectoryStyle = false,
 }: ProjectionChartContainerProps) {
   const [metric, setMetric] = useState<MetricKey>("lifeScore");
 
@@ -287,6 +289,7 @@ export function ProjectionChartContainer({
         nowX={nowX}
         endLabels={endLabels}
         impactHorizonDays={antiChaosProtocol?.series.horizonDays ?? null}
+        matchTrajectoryStyle={matchTrajectoryStyle}
       />
 
       <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/75 px-3 py-2 font-mono text-[11px] tabular-nums">

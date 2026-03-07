@@ -1,4 +1,5 @@
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
+import { BackNavButton } from "@/components/ui/BackNavButton";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PageHeader } from "@/components/public/PageHeader";
 
@@ -6,6 +7,7 @@ export default function PrivacyPage() {
   return (
     <LifeOSBackground>
       <main className="mx-auto min-h-screen w-full max-w-4xl px-6 py-10 text-zinc-100 sm:py-12">
+        <BackNavButton className="mb-4 inline-flex items-center rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500" />
         <PageHeader
           kicker="LEGAL"
           title="Privacy"

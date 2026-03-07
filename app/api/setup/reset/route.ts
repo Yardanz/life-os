@@ -20,20 +20,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Unauthorized", message: "Authentication required." }, { status: 401 });
     }
 
-    const limiter = rateLimit(`system-reset:${userId}`, {
-      windowMs: 60_000,
-      max: 3,
-    });
-    if (!limiter.ok) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "RATE_LIMITED",
-          message: "Too many reset attempts. Try again shortly.",
-          retryAfterMs: limiter.retryAfterMs ?? 0,
-        },
-        { status: 429 }
-      );
+    if (process.env.NODE_ENV === "production") {
+      const limiter = rateLimit(`system-reset:${userId}`, {
+        windowMs: 60_000,
+        max: 3,
+      });
+      if (!limiter.ok) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "RATE_LIMITED",
+            message: "Too many reset attempts. Try again shortly.",
+            retryAfterMs: limiter.retryAfterMs ?? 0,
+          },
+          { status: 429 }
+        );
+      }
     }
 
     const result = await resetUserData(userId);

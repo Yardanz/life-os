@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PresetNumberField } from "@/components/checkin/PresetNumberField";
 import { WorkoutToggle } from "@/components/checkin/WorkoutToggle";
@@ -42,6 +42,7 @@ function createInitialState(): CheckinFormState {
 
 type DailyCheckinFormProps = {
   initialDateISO?: string;
+  startWithYesterday?: boolean;
   baselineLifeScore?: number | null;
   activeProtocol?: {
     state: "OPEN" | "CAUTION" | "LOCKDOWN";
@@ -81,6 +82,7 @@ function computeProjectionSignals(input: CheckinFormState) {
 
 export function DailyCheckinForm({
   initialDateISO,
+  startWithYesterday = false,
   baselineLifeScore = null,
   activeProtocol = null,
   onSuccess,
@@ -95,9 +97,11 @@ export function DailyCheckinForm({
   const [isUpdatingScreen, setIsUpdatingScreen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [projectionLimited, setProjectionLimited] = useState(false);
+  const [checkinsDone, setCheckinsDone] = useState(0);
   const [sleepHoursInput, setSleepHoursInput] = useState<string>(String(initialFormRef.current.sleepHours));
   const [sleepQualityInput, setSleepQualityInput] = useState<string>(String(initialFormRef.current.sleepQuality));
   const [moneyAdjusted, setMoneyAdjusted] = useState(false);
+  const startWithYesterdayAppliedRef = useRef(false);
 
   const canSubmit = useMemo(() => !isSubmitting && !isUpdatingScreen, [isSubmitting, isUpdatingScreen]);
   const hasChanges = useMemo(() => {
@@ -188,16 +192,25 @@ export function DailyCheckinForm({
       try {
         const response = await fetch("/api/setup/state", { cache: "no-store" });
         const payload = (await response.json()) as
-          | { ok: true; data: { confidence: number } }
+          | { ok: true; data: { confidence: number; calibrationCheckinsDone?: number } }
           | { ok: false; error?: string };
         if (cancelled) return;
         if (!response.ok || !payload.ok) {
           setProjectionLimited(true);
+          setCheckinsDone(0);
           return;
         }
         setProjectionLimited(payload.data.confidence < 0.6);
+        setCheckinsDone(
+          typeof payload.data.calibrationCheckinsDone === "number" && Number.isFinite(payload.data.calibrationCheckinsDone)
+            ? Math.max(0, Math.floor(payload.data.calibrationCheckinsDone))
+            : 0
+        );
       } catch {
-        if (!cancelled) setProjectionLimited(true);
+        if (!cancelled) {
+          setProjectionLimited(true);
+          setCheckinsDone(0);
+        }
       }
     };
 
@@ -285,7 +298,7 @@ export function DailyCheckinForm({
     };
   }, [selectedDate]);
 
-  const applyYesterday = () => {
+  const applyYesterday = useCallback(() => {
     setError(null);
     try {
       const yesterdayKey = getDateKey(addDaysISO(selectedDate, -1));
@@ -321,7 +334,13 @@ export function DailyCheckinForm({
     } catch {
       setError("Failed to load yesterday metrics.");
     }
-  };
+  }, [form, selectedDate]);
+
+  useEffect(() => {
+    if (!startWithYesterday || startWithYesterdayAppliedRef.current) return;
+    startWithYesterdayAppliedRef.current = true;
+    applyYesterday();
+  }, [applyYesterday, startWithYesterday]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -617,30 +636,32 @@ export function DailyCheckinForm({
         />
       </div>
 
-      <section className="rounded-lg border border-zinc-800 bg-zinc-950/70 px-3 py-3">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">System Projection</p>
-        {projectionLimited ? (
-          <p className="mt-2 text-xs text-zinc-400">Projection limited - baseline not stabilized</p>
-        ) : (
-          <div className="mt-2 space-y-1 text-xs text-zinc-300">
-            <p>
-              Recovery: {recoveryDelta >= 0 ? "+" : ""}
-              {recoveryDelta.toFixed(1)}
-            </p>
-            <p>
-              Load: {loadDelta >= 0 ? "+" : ""}
-              {loadDelta.toFixed(1)}
-            </p>
-            <p>Risk: {riskDirection === "up" ? "up" : riskDirection === "down" ? "down" : "stable"}</p>
-            <p>
-              Life Score: {displayBaseLifeScore.toFixed(1)} {"->"} {displayProjectedLifeScore.toFixed(1)}
-            </p>
-          </div>
-        )}
-        <p className="mt-2 text-[11px] text-zinc-500">
-          Preview based on current model state. No data saved until applied.
-        </p>
-      </section>
+      {checkinsDone >= 3 ? (
+        <section className="rounded-lg border border-zinc-800 bg-zinc-950/70 px-3 py-3">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">System Projection</p>
+          {projectionLimited ? (
+            <p className="mt-2 text-xs text-zinc-400">Projection limited - baseline not stabilized</p>
+          ) : (
+            <div className="mt-2 space-y-1 text-xs text-zinc-300">
+              <p>
+                Recovery: {recoveryDelta >= 0 ? "+" : ""}
+                {recoveryDelta.toFixed(1)}
+              </p>
+              <p>
+                Load: {loadDelta >= 0 ? "+" : ""}
+                {loadDelta.toFixed(1)}
+              </p>
+              <p>Risk: {riskDirection === "up" ? "up" : riskDirection === "down" ? "down" : "stable"}</p>
+              <p>
+                Life Score: {displayBaseLifeScore.toFixed(1)} {"->"} {displayProjectedLifeScore.toFixed(1)}
+              </p>
+            </div>
+          )}
+          <p className="mt-2 text-[11px] text-zinc-500">
+            Preview based on current model state. No data saved until applied.
+          </p>
+        </section>
+      ) : null}
 
       {activeProtocol ? (
         <section className="rounded-lg border border-zinc-800 bg-zinc-950/70 px-3 py-3">

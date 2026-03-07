@@ -2279,6 +2279,7 @@ export async function GET(request: Request) {
       console.warn(`[control-room] trend dayKeys=${recent7DayKeys.join(",")} points=${series7d.length}`);
     }
 
+    const totalCheckins = await prisma.dailyCheckIn.count({ where: { userId: user.id } });
     const resolvedStatus = resolveStatus(snapshot.systemStatus, toNumber(snapshot.lifeScore), series7d);
 
     requestTimer.end({ status: 200 });
@@ -2287,6 +2288,7 @@ export async function GET(request: Request) {
         ok: true,
         data: {
           userId: user.id,
+          totalCheckins,
           demoMode,
           isAdmin: isAdmin(user),
           plan: user.plan,

@@ -71,6 +71,7 @@ model User {
   role             String             @default("USER")
   plan             UserPlan           @default(FREE)
   onboardingCompleted Boolean         @default(false)
+  welcomeModalSeen Boolean            @default(false)
   calibrationCheckinsNeeded Int       @default(7)
   calibrationCheckinsDone Int         @default(0)
   adaptiveRiskOffset Float            @default(0)

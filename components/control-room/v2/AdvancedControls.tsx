@@ -8,6 +8,7 @@ type AdvancedControlsProps = {
   onExplain: () => void;
   onReportIssue: () => void;
   onGlossary: () => void;
+  onLogout: () => void;
   onReset: () => void;
   onDelete: () => void;
 };
@@ -18,13 +19,14 @@ export function AdvancedControls({
   onExplain,
   onReportIssue,
   onGlossary,
+  onLogout,
   onReset,
   onDelete,
 }: AdvancedControlsProps) {
   return (
     <details className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
       <summary className="cursor-pointer list-none text-sm font-medium text-zinc-200">Advanced Controls v</summary>
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <button type="button" onClick={onExport} className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 hover:border-zinc-500">
           Export system log
         </button>
@@ -34,11 +36,18 @@ export function AdvancedControls({
         <button type="button" onClick={onReportIssue} className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 hover:border-zinc-500">
           Report issue
         </button>
+        <button type="button" onClick={onGlossary} className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 hover:border-zinc-500">
+          Glossary
+        </button>
         <Link href="/app/settings" className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-center text-sm text-zinc-200 hover:border-zinc-500">
           Settings
         </Link>
-        <button type="button" onClick={onGlossary} className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 hover:border-zinc-500">
-          Glossary
+        <button
+          type="button"
+          onClick={onLogout}
+          className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 hover:border-zinc-500"
+        >
+          Logout
         </button>
         <button
           type="button"

@@ -1,3 +1,11 @@
+import type {
+  ControlRoomBreakdown,
+  ControlRoomCalibration,
+  ControlRoomDiagnosis,
+  ControlRoomExecutiveSummary,
+  ControlRoomPatterns,
+} from "@/lib/control-room/types";
+
 export type ProtocolRunRecord = {
   id: string;
   createdAt: string;
@@ -15,8 +23,15 @@ export type ProtocolRunRecord = {
 
 export type ControlRoomV2Data = {
   userId: string;
+  totalCheckins?: number;
   demoMode?: boolean;
   plan: "FREE" | "PRO";
+  featureAccess?: {
+    antiChaos: boolean;
+    forecast30d: boolean;
+    allStats: boolean;
+    history: boolean;
+  };
   todayCheckInExists: boolean;
   checkinSnapshot: {
     date: string;
@@ -35,6 +50,15 @@ export type ControlRoomV2Data = {
   };
   modelConfidence: {
     confidence: number;
+    notes?: string[];
+    components?: {
+      coverageScore: number;
+      completenessScore: number;
+      stabilityScore: number;
+      convergenceScore: number;
+      patternScore: number;
+      sensitivityScore: number;
+    };
   };
   guardrail: {
     label: "OPEN" | "CAUTION" | "LOCKDOWN";
@@ -49,11 +73,24 @@ export type ControlRoomV2Data = {
   calibration: {
     active: boolean;
     confidence: number;
+  } & ControlRoomCalibration;
+  diagnosis?: ControlRoomDiagnosis;
+  executiveSummary?: ControlRoomExecutiveSummary;
+  patterns?: ControlRoomPatterns;
+  breakdown?: ControlRoomBreakdown;
+  adaptiveBaseline?: {
+    riskOffset: number;
+    recoveryOffset: number;
   };
   snapshot: {
     lifeScore: number;
   };
+  date: string;
   series7d: Array<{
+    date: string;
+    lifeScore: number;
+  }>;
+  series30d?: Array<{
     date: string;
     lifeScore: number;
   }>;

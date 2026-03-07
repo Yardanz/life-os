@@ -5,6 +5,7 @@ import { requireProPlan } from "@/lib/api/plan";
 import { ensureLiveDemoData } from "@/lib/demo/seedLiveDemo";
 import { isDemoModeRequest, LIVE_DEMO_USER_ID } from "@/lib/demoMode";
 import { generateAntiChaosProtocol } from "@/lib/anti-chaos/antiChaos";
+import { persistAntiChaosProtocol } from "@/lib/anti-chaos/persistAntiChaosProtocol";
 
 export async function POST(request: Request) {
   try {
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
       dateISO: payload.date,
       horizonHours: payload.horizonHours,
     });
+    await persistAntiChaosProtocol(protocol);
     return NextResponse.json({ ok: true, data: protocol }, { status: 200 });
   } catch (error) {
     return errorResponse(error);
@@ -47,6 +49,7 @@ export async function GET(request: Request) {
       dateISO: parsed.date,
       horizonHours: parsed.horizonHours,
     });
+    await persistAntiChaosProtocol(protocol);
     return NextResponse.json({ ok: true, data: protocol }, { status: 200 });
   } catch (error) {
     if (error instanceof ApiError && error.status === 403) {

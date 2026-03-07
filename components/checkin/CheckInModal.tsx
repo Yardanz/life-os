@@ -6,6 +6,7 @@ import { ModalShell } from "@/components/ui/ModalShell";
 type CheckInModalProps = {
   open: boolean;
   dateISO: string;
+  startWithYesterday?: boolean;
   baselineLifeScore?: number | null;
   activeProtocol?: {
     state: "OPEN" | "CAUTION" | "LOCKDOWN";
@@ -19,6 +20,7 @@ type CheckInModalProps = {
 export function CheckInModal({
   open,
   dateISO,
+  startWithYesterday = false,
   baselineLifeScore = null,
   activeProtocol = null,
   onClose,
@@ -44,6 +46,7 @@ export function CheckInModal({
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
             <DailyCheckinForm
               initialDateISO={dateISO}
+              startWithYesterday={startWithYesterday}
               baselineLifeScore={baselineLifeScore}
               activeProtocol={activeProtocol}
               onSuccess={() => requestClose(onSaved)}

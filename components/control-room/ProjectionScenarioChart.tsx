@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ProjectionChartContainer } from "@/components/control-room/projection/ProjectionChartContainer";
 import { RiskEnvelopeChart } from "@/components/control-room/projection/RiskEnvelopeChart";
 import { AntiChaosPanel } from "@/components/control-room/projection/AntiChaosPanel";
@@ -118,6 +118,7 @@ type ProjectionScenarioChartProps = {
     confidence: number;
     notes: string[];
   };
+  matchTrajectoryStyle?: boolean;
 };
 
 type ScenarioLibraryItem = {
@@ -188,7 +189,9 @@ export function ProjectionScenarioChart({
   impact72h = null,
   decisionBudget72h = null,
   modelConfidence,
+  matchTrajectoryStyle = false,
 }: ProjectionScenarioChartProps) {
+  const WHY_POPOVER_ID = "projection-budget-why-popover";
   const guardrailLabel = guardrail.label === "OPEN" ? t("open", locale) : guardrail.label === "CAUTION" ? t("caution", locale) : t("lockdown", locale);
 
   const hasData = projection.baseline.length > 0 || projection.stabilization.length > 0 || projection.overload.length > 0;
@@ -253,6 +256,9 @@ export function ProjectionScenarioChart({
   const applyBudgetLabel = applyBlockedByLoadBudget ? "Exceeds Budget" : applyExceedsBudget ? "Exceeds 72h Budget" : null;
   const budgetWhyTooltip =
     "Budget is the allowable load envelope given current recovery capacity.\nPrimary violation indicates the first constraint exceeded.";
+  const [whyPopoverOpen, setWhyPopoverOpen] = useState<"overload" | "apply" | null>(null);
+  const whyPopoverRef = useRef<HTMLDivElement | null>(null);
+  const whyTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [horizonHours, setHorizonHours] = useState<24 | 48 | 72>(24);
   const [viewMode, setViewMode] = useState<"projection30d" | "envelope72h">("projection30d");
   const [protocolLoading, setProtocolLoading] = useState(false);
@@ -535,6 +541,32 @@ export function ProjectionScenarioChart({
   }, [guardrail.level, modifiers, onModifiersChange]);
 
   useEffect(() => {
+    if (!whyPopoverOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (whyPopoverRef.current?.contains(target)) return;
+      if (whyTriggerRef.current?.contains(target)) return;
+      setWhyPopoverOpen(null);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setWhyPopoverOpen(null);
+        whyTriggerRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [whyPopoverOpen]);
+
+  useEffect(() => {
     onAntiChaosProtocolChange?.(activeProtocol);
   }, [activeProtocol, onAntiChaosProtocolChange]);
 
@@ -683,7 +715,7 @@ export function ProjectionScenarioChart({
       <header className="mb-3 flex items-center justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-medium text-zinc-200">{t("projection30d", locale)}</h3>
+            <h3 className="text-lg font-semibold text-zinc-100">Last 30 days</h3>
             <button
               type="button"
               onClick={() => void saveScenario()}
@@ -748,7 +780,7 @@ export function ProjectionScenarioChart({
             viewMode === "projection30d" ? "bg-cyan-500/20 text-cyan-100" : "text-zinc-400 hover:text-zinc-200"
           }`}
         >
-          {t("projection30d", locale)}
+          30-Day trajectory
         </button>
         <button
           type="button"
@@ -789,13 +821,29 @@ export function ProjectionScenarioChart({
           {overloadPrimaryViolation ? (
             <div className="mt-1 flex items-center gap-2">
               <p className="text-[11px] text-amber-200/90">Primary violation: {overloadPrimaryViolation}</p>
-              <button
-                type="button"
-                title={budgetWhyTooltip}
-                className="rounded border border-zinc-700 bg-zinc-900/80 px-1.5 py-0.5 text-[10px] text-zinc-300 hover:border-zinc-500"
-              >
-                Why?
-              </button>
+              <div className="relative">
+                <button
+                  ref={whyPopoverOpen === "overload" ? whyTriggerRef : null}
+                  type="button"
+                  onClick={() => setWhyPopoverOpen((current) => (current === "overload" ? null : "overload"))}
+                  aria-expanded={whyPopoverOpen === "overload"}
+                  aria-controls={whyPopoverOpen === "overload" ? WHY_POPOVER_ID : undefined}
+                  className="rounded border border-zinc-700 bg-zinc-900/80 px-1.5 py-0.5 text-[10px] text-zinc-300 hover:border-zinc-500"
+                >
+                  Why?
+                </button>
+                {whyPopoverOpen === "overload" ? (
+                  <div
+                    id={WHY_POPOVER_ID}
+                    ref={whyPopoverRef}
+                    role="dialog"
+                    aria-label="Budget explanation"
+                    className="absolute left-0 top-[calc(100%+6px)] z-20 w-64 rounded-md border border-zinc-700 bg-zinc-950/95 px-2.5 py-2 text-[11px] text-zinc-200 whitespace-pre-line shadow-[0_10px_24px_rgba(0,0,0,0.45)]"
+                  >
+                    {budgetWhyTooltip}
+                  </div>
+                ) : null}
+              </div>
             </div>
           ) : null}
         </div>
@@ -922,6 +970,7 @@ export function ProjectionScenarioChart({
             isPro={isPro}
             customLoading={customLoading}
             showOverload={overloadEnabled}
+            matchTrajectoryStyle={matchTrajectoryStyle}
           />
           <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/65 px-3 py-2">
               <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1 text-xs">
@@ -1124,13 +1173,29 @@ export function ProjectionScenarioChart({
                   {applyPrimaryViolation ? (
                     <div className="mt-1 flex items-center gap-2">
                       <p className="text-[11px] text-amber-200/90">Primary violation: {applyPrimaryViolation}</p>
-                      <button
-                        type="button"
-                        title={budgetWhyTooltip}
-                        className="rounded border border-zinc-700 bg-zinc-900/80 px-1.5 py-0.5 text-[10px] text-zinc-300 hover:border-zinc-500"
-                      >
-                        Why?
-                      </button>
+                      <div className="relative">
+                        <button
+                          ref={whyPopoverOpen === "apply" ? whyTriggerRef : null}
+                          type="button"
+                          onClick={() => setWhyPopoverOpen((current) => (current === "apply" ? null : "apply"))}
+                          aria-expanded={whyPopoverOpen === "apply"}
+                          aria-controls={whyPopoverOpen === "apply" ? WHY_POPOVER_ID : undefined}
+                          className="rounded border border-zinc-700 bg-zinc-900/80 px-1.5 py-0.5 text-[10px] text-zinc-300 hover:border-zinc-500"
+                        >
+                          Why?
+                        </button>
+                        {whyPopoverOpen === "apply" ? (
+                          <div
+                            id={WHY_POPOVER_ID}
+                            ref={whyPopoverRef}
+                            role="dialog"
+                            aria-label="Budget explanation"
+                            className="absolute left-0 top-[calc(100%+6px)] z-20 w-64 rounded-md border border-zinc-700 bg-zinc-950/95 px-2.5 py-2 text-[11px] text-zinc-200 whitespace-pre-line shadow-[0_10px_24px_rgba(0,0,0,0.45)]"
+                          >
+                            {budgetWhyTooltip}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   ) : null}
                 </div>
