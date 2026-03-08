@@ -47,7 +47,7 @@ export function Trajectory30dCard({ points }: Trajectory30dCardProps) {
       <p className="text-xs uppercase tracking-[0.18em] text-amber-300/70">Advanced Trajectory</p>
       <h3 className="mt-2 text-lg font-semibold text-zinc-100">Last 30 days</h3>
       <div className="relative mt-3 rounded-lg border border-zinc-800 bg-zinc-950/70 p-3">
-        <svg viewBox={`0 0 ${view.width} ${view.height}`} className="h-64 w-full" role="img" aria-label="Life score trend for last 30 days">
+        <svg viewBox={`0 0 ${view.width} ${view.height}`} className="h-56 w-full sm:h-64" role="img" aria-label="Life score trend for last 30 days">
           <text
             x={view.left + plotWidth / 2}
             y={12}
@@ -106,10 +106,10 @@ export function Trajectory30dCard({ points }: Trajectory30dCardProps) {
 
         {hovered ? (
           <div
-            className="pointer-events-none absolute z-10 whitespace-nowrap rounded-md border border-zinc-700 bg-zinc-900/95 px-2 py-1 text-xs text-zinc-200 shadow-[0_8px_20px_rgba(0,0,0,0.45)]"
+            className="pointer-events-none absolute z-10 max-w-[min(13rem,calc(100%-1rem))] rounded-md border border-zinc-700 bg-zinc-900/95 px-2 py-1 text-xs text-zinc-200 shadow-[0_8px_20px_rgba(0,0,0,0.45)]"
             style={{
-              left: `calc(${((hovered.x / view.width) * 100).toFixed(2)}% - ${isRightEdgeHover ? 120 : 48}px)`,
-              top: `calc(${((hovered.y / view.height) * 100).toFixed(2)}% - 52px)`,
+              left: `clamp(8px, calc(${((hovered.x / view.width) * 100).toFixed(2)}% - ${isRightEdgeHover ? 120 : 48}px), calc(100% - 10rem))`,
+              top: `clamp(8px, calc(${((hovered.y / view.height) * 100).toFixed(2)}% - 52px), calc(100% - 4.2rem))`,
             }}
           >
             <p className="font-medium">

@@ -6,8 +6,8 @@ import { PublicNavLinks } from "@/components/public/PublicNavLinks";
 export default function RestrictedPage() {
   return (
     <LifeOSBackground>
-      <main className="mx-auto min-h-screen w-full max-w-4xl px-6 py-10 text-zinc-100">
-        <header className="flex items-center justify-between gap-3">
+      <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-10 text-zinc-100 sm:px-6">
+        <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Sign in</p>
             <h1 className="mt-2 text-3xl font-semibold text-zinc-100">Access Restricted</h1>

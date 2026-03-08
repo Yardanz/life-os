@@ -1,22 +1,21 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { ApiError, errorResponse } from "@/lib/api/errors";
-import { requireAdmin } from "@/lib/authz";
+import { isAdmin } from "@/lib/authz";
 import { devSimulate30dPayloadSchema } from "@/lib/api/schemas";
 import { ensureUserWithPlan } from "@/lib/api/plan";
 import { prisma } from "@/lib/prisma";
-import { buildSimulatedCheckins } from "@/lib/dev/simulateCheckins";
+import {
+  buildBurnoutSpiralCheckins,
+  buildRecoveryReboundCheckins,
+  buildSimulatedCheckins,
+} from "@/lib/dev/simulateCheckins";
 import { recalculateDay } from "@/lib/services/recalculateDay";
 import { toUtcDateOnly } from "@/lib/api/date";
 import { getUtcISODate } from "@/lib/date/getUtcISODate";
 
 function devToolsEnabled(): boolean {
   return process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_DEV_TOOLS === "true";
-}
-
-function allowedUsers(): Set<string> {
-  const configured =
-    process.env.DEV_SIM_ALLOWED_USERS?.split(",").map((value) => value.trim()).filter(Boolean) ?? [];
-  return new Set(["demo-user", ...configured]);
 }
 
 async function resolveConfigVersion(): Promise<number> {
@@ -36,15 +35,24 @@ async function resolveConfigVersion(): Promise<number> {
 export async function POST(request: Request) {
   try {
     if (!devToolsEnabled()) throw new ApiError(404, "Not found");
-    await requireAdmin();
-
-    const payload = devSimulate30dPayloadSchema.parse(await request.json());
-    const allowed = allowedUsers();
-    if (!allowed.has(payload.userId)) {
-      throw new ApiError(403, `User '${payload.userId}' is not allowed for dev simulation.`);
+    const session = await auth();
+    const sessionUserId = session?.user?.id;
+    if (!sessionUserId) {
+      throw new ApiError(401, "Unauthorized");
     }
 
-    const user = await ensureUserWithPlan(payload.userId, request);
+    const payload = devSimulate30dPayloadSchema.parse(await request.json());
+    const sessionUser = await prisma.user.findUnique({
+      where: { id: sessionUserId },
+      select: { id: true, email: true, role: true },
+    });
+    const admin = isAdmin(sessionUser);
+    const targetUserId = payload.userId;
+    if (!admin && targetUserId !== sessionUserId) {
+      throw new ApiError(403, "Dev simulation is allowed only for the current user.");
+    }
+
+    const user = await ensureUserWithPlan(targetUserId, request);
     const endDate = toUtcDateOnly(payload.endDateISO);
     const days = payload.days ?? 30;
     const startDate = new Date(endDate);
@@ -95,12 +103,29 @@ export async function POST(request: Request) {
 
     const seed = payload.seed === undefined || payload.seed === "" ? getUtcISODate() : payload.seed;
     const configVersion = await resolveConfigVersion();
-    const generated = buildSimulatedCheckins({
-      userId: user.id,
-      endDateISO: payload.endDateISO,
-      days,
-      seed,
-    });
+    let generated;
+    if (payload.scenario === "burnout_spiral") {
+      generated = buildBurnoutSpiralCheckins({
+        userId: user.id,
+        endDateISO: payload.endDateISO,
+        days,
+        seed,
+      });
+    } else if (payload.scenario === "recovery_rebound") {
+      generated = buildRecoveryReboundCheckins({
+        userId: user.id,
+        endDateISO: payload.endDateISO,
+        days,
+        seed,
+      });
+    } else {
+      generated = buildSimulatedCheckins({
+        userId: user.id,
+        endDateISO: payload.endDateISO,
+        days,
+        seed,
+      });
+    }
 
     const existing = payload.overwrite
       ? new Set<string>()
@@ -164,6 +189,7 @@ export async function POST(request: Request) {
           days,
           seed: String(seed),
           overwrite: payload.overwrite,
+          scenario: payload.scenario,
           generatedCount: generated.length,
         },
       },

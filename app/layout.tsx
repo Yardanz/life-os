@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { GlobalThemeToggle } from "@/components/theme/GlobalThemeToggle";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "LIFE OS",
@@ -12,7 +14,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="antialiased">
         <a
           href="#main-content"
@@ -20,6 +25,7 @@ export default function RootLayout({
         >
           Skip to content
         </a>
+        <GlobalThemeToggle />
         {children}
       </body>
     </html>

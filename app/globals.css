@@ -1,8 +1,140 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #070b10;
+  --foreground: #e4e4e7;
+  --lifeos-bg: #070b10;
+  --lifeos-grid-rgb: 255, 255, 255;
+  --lifeos-grid-alpha: 0.025;
+  --lifeos-glow-rgb: 34, 211, 238;
+  --lifeos-glow-alpha: 0.18;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --background: #f4f7fa;
+  --foreground: #0f172a;
+  --lifeos-bg: #f4f7fa;
+  --lifeos-grid-rgb: 15, 23, 42;
+  --lifeos-grid-alpha: 0.018;
+  --lifeos-glow-rgb: 14, 165, 233;
+  --lifeos-glow-alpha: 0.06;
+  color-scheme: light;
+
+  --color-zinc-50: #0a0f1a;
+  --color-zinc-100: #0f172a;
+  --color-zinc-200: #1e293b;
+  --color-zinc-300: #475569;
+  --color-zinc-400: #64748b;
+  --color-zinc-500: #64748b;
+  --color-zinc-600: #73879e;
+  --color-zinc-700: #cbd5e1;
+  --color-zinc-800: #e2e8f0;
+  --color-zinc-900: #ffffff;
+  --color-zinc-950: #ffffff;
+
+  --color-cyan-50: #0b3550;
+  --color-cyan-100: #0f4b6a;
+  --color-cyan-200: #0e5f82;
+  --color-cyan-300: #0f749d;
+  --color-cyan-400: #178fbd;
+  --color-cyan-500: #2eaadc;
+  --color-cyan-600: #56bee7;
+  --color-cyan-700: #86d2f0;
+  --color-cyan-800: #b8e6f7;
+  --color-cyan-900: #e3f5fc;
+  --color-cyan-950: #f2fbff;
+
+  --color-amber-50: #451a03;
+  --color-amber-100: #78350f;
+  --color-amber-200: #92400e;
+  --color-amber-300: #b45309;
+  --color-amber-400: #d97706;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #fbbf24;
+  --color-amber-700: #fcd34d;
+  --color-amber-800: #fde68a;
+  --color-amber-900: #fef3c7;
+  --color-amber-950: #fffbeb;
+
+  --color-rose-50: #4c0519;
+  --color-rose-100: #881337;
+  --color-rose-200: #9f1239;
+  --color-rose-300: #be123c;
+  --color-rose-400: #e11d48;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #fb7185;
+  --color-rose-700: #fda4af;
+  --color-rose-800: #fecdd3;
+  --color-rose-900: #ffe4e6;
+  --color-rose-950: #fff1f2;
+
+  --color-emerald-50: #022c22;
+  --color-emerald-100: #064e3b;
+  --color-emerald-200: #065f46;
+  --color-emerald-300: #047857;
+  --color-emerald-400: #059669;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #34d399;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #a7f3d0;
+  --color-emerald-900: #d1fae5;
+  --color-emerald-950: #ecfdf5;
+
+  --color-sky-50: #082f49;
+  --color-sky-100: #0c4a6e;
+  --color-sky-200: #075985;
+  --color-sky-300: #0369a1;
+  --color-sky-400: #0284c7;
+  --color-sky-500: #0ea5e9;
+  --color-sky-600: #38bdf8;
+  --color-sky-700: #7dd3fc;
+  --color-sky-800: #bae6fd;
+  --color-sky-900: #e0f2fe;
+  --color-sky-950: #f0f9ff;
+}
+
+:root[data-theme="light"] [class*="border-zinc-800"] {
+  border-color: #e3e8ef;
+}
+
+:root[data-theme="light"] [class*="border-zinc-700"] {
+  border-color: #d7dee8;
+}
+
+:root[data-theme="light"] [class*="bg-zinc-900"][class*="border-"],
+:root[data-theme="light"] [class*="bg-zinc-950"][class*="border-"] {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="light"] [class*="bg-cyan-500/10"] {
+  background-color: rgba(46, 170, 220, 0.18);
+}
+
+:root[data-theme="light"] [class*="bg-cyan-500/15"] {
+  background-color: rgba(46, 170, 220, 0.24);
+}
+
+:root[data-theme="light"] [class*="border-cyan-400"] {
+  border-color: rgba(23, 143, 189, 0.52);
+}
+
+:root[data-theme="light"] .light-lift-card {
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+
+:root[data-theme="light"] .light-lift-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="light"] .landing-main > section + section {
+  margin-top: 48px;
+  padding-top: 48px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 @theme inline {
@@ -12,18 +144,14 @@
   --font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   overflow-x: hidden;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
 }
 
 html {

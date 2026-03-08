@@ -265,7 +265,7 @@ export function OnboardingTutorialModal({
     <ModalShell open={open} onClose={handleShellClose} ariaLabel="LIFE OS onboarding tutorial" panelClassName="max-w-5xl p-5 sm:p-6">
       {({ requestClose }) => (
         <div className="space-y-4">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
                 Tutorial step {step + 1} / {TOTAL_STEPS}
@@ -275,7 +275,7 @@ export function OnboardingTutorialModal({
             <button
               type="button"
               onClick={() => requestClose()}
-              className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500"
+              className="min-h-10 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500"
             >
               Close
             </button>
@@ -291,13 +291,13 @@ export function OnboardingTutorialModal({
 
           {error ? <p className="rounded-md border border-rose-500/40 bg-rose-950/30 px-3 py-2 text-sm text-rose-200">{error}</p> : null}
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center">
             {step > 0 ? (
               <button
                 type="button"
                 onClick={() => setStep((value) => Math.max(0, value - 1))}
                 disabled={saving}
-                className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-10 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 Back
               </button>
@@ -308,7 +308,7 @@ export function OnboardingTutorialModal({
                 type="button"
                 onClick={() => setStep((value) => Math.min(TOTAL_STEPS - 1, value + 1))}
                 disabled={saving}
-                className="rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-10 w-full rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 Next
               </button>
@@ -318,7 +318,7 @@ export function OnboardingTutorialModal({
                   type="button"
                   onClick={() => requestClose(onFinish)}
                   disabled={saving}
-                  className="rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="min-h-10 w-full rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
                   {saving ? "Saving..." : "Enter Control Room"}
                 </button>
@@ -326,7 +326,7 @@ export function OnboardingTutorialModal({
                   type="button"
                   onClick={() => requestClose(onBeginCheckin)}
                   disabled={saving}
-                  className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="min-h-10 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
                   Begin check-in
                 </button>

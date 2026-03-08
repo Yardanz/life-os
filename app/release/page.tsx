@@ -73,13 +73,13 @@ export default function ReleasePage() {
           <div className="mt-4 flex flex-wrap gap-2 text-xs">
             <Link
               href="/privacy"
-              className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-zinc-200 transition hover:border-zinc-500"
+              className="inline-flex min-h-10 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-zinc-200 transition hover:border-zinc-500"
             >
               Privacy
             </Link>
             <Link
               href="/terms"
-              className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-zinc-200 transition hover:border-zinc-500"
+              className="inline-flex min-h-10 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-zinc-200 transition hover:border-zinc-500"
             >
               Terms
             </Link>

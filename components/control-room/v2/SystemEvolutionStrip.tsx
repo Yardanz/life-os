@@ -33,7 +33,7 @@ const operatorDepthMilestones: StageItem[] = [
 ];
 
 const utilityButtonClass =
-  "inline-flex min-h-8 items-center justify-center rounded-md border border-zinc-700 bg-zinc-950/90 px-3.5 py-1.5 text-xs font-medium tracking-[0.01em] text-zinc-100 transition hover:border-zinc-500 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 active:translate-y-[1px]";
+  "inline-flex min-h-9 items-center justify-center rounded-md border border-zinc-700 bg-zinc-950/90 px-3.5 py-1.5 text-xs font-medium tracking-[0.01em] text-zinc-100 transition hover:border-zinc-500 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 active:translate-y-[1px]";
 
 function CheckIcon({ tone = "emerald" }: { tone?: "emerald" | "amber" }) {
   const color = tone === "amber" ? "text-amber-300" : "text-emerald-300";
@@ -137,12 +137,12 @@ export function SystemEvolutionStrip({
   if (collapsed && collapsible) {
     return (
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900/70 px-4 py-2.5">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">System Evolution</p>
             <p className="mt-0.5 text-xs text-zinc-400">Day {currentDay} - onboarding {done}/7</p>
           </div>
-          <div className="flex shrink-0 items-center gap-2.5">
+          <div className="flex w-full flex-wrap items-center gap-2.5 sm:w-auto sm:shrink-0">
             {onOpenTutorial ? (
               <button
                 type="button"
@@ -167,9 +167,9 @@ export function SystemEvolutionStrip({
 
   return (
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 sm:p-6">
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">System Evolution</p>
-        <div className="flex shrink-0 items-center gap-2.5">
+        <div className="flex w-full flex-wrap items-center gap-2.5 sm:w-auto sm:shrink-0">
           {onOpenTutorial ? (
             <button
               type="button"

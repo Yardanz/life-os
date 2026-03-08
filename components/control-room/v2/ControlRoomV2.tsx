@@ -50,6 +50,20 @@ type SetupStatePayload = {
   confidencePct: number;
 };
 
+type DebugSimulationMode =
+  | "debug-random-simulation"
+  | "debug-burnout-spiral-simulation"
+  | "debug-recovery-rebound-simulation";
+
+type DevSimulationWindow = {
+  userId: string;
+  startDate: string;
+  endDate: string;
+  days: number;
+  generatedCount: number;
+  mode: DebugSimulationMode;
+};
+
 type ProjectionPoint = {
   dateOffset: number;
   lifeScore: number;
@@ -139,10 +153,27 @@ type ProjectionCustomResponse =
 
 type UiPlanMode = "live" | "free" | "pro";
 const UI_PLAN_STORAGE_KEY = "lifeos.controlroom.uiPlanMode";
+const CHECKIN_STORAGE_PREFIX = "lifeos.checkin";
 
 function parseUiPlanMode(value: string | null): UiPlanMode | null {
   if (value === "live" || value === "free" || value === "pro") return value;
   return null;
+}
+
+function clearCheckinLocalCache(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const keysToDelete: string[] = [];
+    for (let index = 0; index < window.localStorage.length; index += 1) {
+      const key = window.localStorage.key(index);
+      if (key && key.startsWith(`${CHECKIN_STORAGE_PREFIX}.`)) {
+        keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach((key) => window.localStorage.removeItem(key));
+  } catch {
+    // no-op
+  }
 }
 
 export function ControlRoomV2({
@@ -204,6 +235,16 @@ export function ControlRoomV2({
   } | null>(null);
   const [projectionLoading, setProjectionLoading] = useState(false);
   const [projectionError, setProjectionError] = useState<string | null>(null);
+  const [devSimLoading, setDevSimLoading] = useState(false);
+  const [devSimInFlightScenario, setDevSimInFlightScenario] = useState<
+    "random" | "burnout_spiral" | "recovery_rebound" | null
+  >(null);
+  const [devSimNotice, setDevSimNotice] = useState<string | null>(null);
+  const [devSimError, setDevSimError] = useState<string | null>(null);
+  const [devSimWindow, setDevSimWindow] = useState<DevSimulationWindow | null>(null);
+  const [devExportLoading, setDevExportLoading] = useState(false);
+  const [devExportNotice, setDevExportNotice] = useState<string | null>(null);
+  const [devExportError, setDevExportError] = useState<string | null>(null);
   const [projection30d, setProjection30d] = useState<Projection30d | null>(null);
   const [envelope72h, setEnvelope72h] = useState<RiskEnvelopePoint[] | null>(null);
   const [impact72h, setImpact72h] = useState<EnvelopeImpactPayload | null>(null);
@@ -223,6 +264,7 @@ export function ControlRoomV2({
   const preSubmitCheckinCountRef = useRef<number>(0);
   const pendingMilestoneCheckRef = useRef<number | null>(null);
   const autoOpenedMilestonesRef = useRef<Set<EvolutionDay>>(new Set());
+  const welcomeSeenPersistingRef = useRef(false);
   const [latestUnlockedMilestone, setLatestUnlockedMilestone] = useState<EvolutionDay | null>(null);
 
   useEffect(() => {
@@ -279,6 +321,35 @@ export function ControlRoomV2({
     }
   }, []);
 
+  const markWelcomeSeen = useCallback(
+    async (options?: { suppressError?: boolean }): Promise<boolean> => {
+      if (setupState?.welcomeModalSeen || welcomeSeenPersistingRef.current) {
+        return true;
+      }
+      try {
+        welcomeSeenPersistingRef.current = true;
+        const response = await fetch("/api/setup/complete-welcome", { method: "POST" });
+        const payload = (await response.json()) as { ok?: boolean; error?: string; data?: SetupStatePayload };
+        if (!response.ok || !payload.ok || !payload.data) {
+          throw new Error(payload.error ?? "Failed to complete welcome flow.");
+        }
+        setSetupState(payload.data);
+        setWelcomeModalError(null);
+        return true;
+      } catch (welcomeError) {
+        if (!options?.suppressError) {
+          setWelcomeModalError(
+            welcomeError instanceof Error ? welcomeError.message : "Failed to complete welcome flow."
+          );
+        }
+        return false;
+      } finally {
+        welcomeSeenPersistingRef.current = false;
+      }
+    },
+    [setupState?.welcomeModalSeen]
+  );
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -327,12 +398,14 @@ export function ControlRoomV2({
     if (!setupState.welcomeModalSeen && !welcomeModalAcknowledged) {
       setWelcomeModalError(null);
       setWelcomeModalOpen(true);
+      setWelcomeModalAcknowledged(true);
+      void markWelcomeSeen({ suppressError: true });
       return;
     }
-    if (setupState.welcomeModalSeen) {
+    if (setupState.welcomeModalSeen && !welcomeModalAcknowledged) {
       setWelcomeModalOpen(false);
     }
-  }, [setupState, welcomeModalAcknowledged]);
+  }, [markWelcomeSeen, setupState, welcomeModalAcknowledged]);
 
   useEffect(() => {
     let cancelled = false;
@@ -454,18 +527,155 @@ export function ControlRoomV2({
     [pathname, router, searchParams]
   );
 
+  const isDemoReadOnly = demoMode || Boolean(data?.demoMode);
+
+  const runDebugSimulation = useCallback(async (scenario: "random" | "burnout_spiral" | "recovery_rebound") => {
+    if (!showDebugPanel || isDemoReadOnly) return;
+    const simulationUserId = data?.userId ?? userId;
+    if (!simulationUserId) return;
+
+    try {
+      setDevSimLoading(true);
+      setDevSimInFlightScenario(scenario);
+      setDevSimError(null);
+      setDevSimNotice(null);
+      setDevExportError(null);
+      setDevExportNotice(null);
+      const response = await fetch("/api/dev/simulate-30d", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          userId: simulationUserId,
+          endDateISO: selectedDate,
+          days: 30,
+          seed: `${selectedDate}:${scenario}`,
+          overwrite: true,
+          mode: "simulate",
+          scenario,
+        }),
+      });
+      const payload = (await response.json()) as
+        | {
+            ok: true;
+            data: {
+              userId: string;
+              generatedCount: number;
+              startDate: string;
+              endDate: string;
+              days: number;
+              scenario?: "random" | "burnout_spiral" | "recovery_rebound";
+            };
+          }
+        | { ok: false; error?: string; message?: string };
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.ok ? "Failed to simulate check-ins." : payload.error ?? payload.message ?? "Failed to simulate check-ins.");
+      }
+      const scenarioFromResponse = payload.data.scenario ?? scenario;
+      const scenarioLabel =
+        scenarioFromResponse === "burnout_spiral"
+          ? "Burnout spiral scenario"
+          : scenarioFromResponse === "recovery_rebound"
+            ? "Recovery rebound scenario"
+            : "30-day random simulation";
+      setDevSimNotice(`${scenarioLabel}: ${payload.data.generatedCount} days (${payload.data.startDate} -> ${payload.data.endDate}).`);
+      setDevSimWindow({
+        userId: payload.data.userId,
+        startDate: payload.data.startDate,
+        endDate: payload.data.endDate,
+        days: payload.data.days,
+        generatedCount: payload.data.generatedCount,
+        mode:
+          scenarioFromResponse === "burnout_spiral"
+            ? "debug-burnout-spiral-simulation"
+            : scenarioFromResponse === "recovery_rebound"
+              ? "debug-recovery-rebound-simulation"
+              : "debug-random-simulation",
+      });
+      setReloadKey((value) => value + 1);
+    } catch (simulationError) {
+      setDevSimError(simulationError instanceof Error ? simulationError.message : "Failed to simulate check-ins.");
+      setDevSimWindow(null);
+    } finally {
+      setDevSimLoading(false);
+      setDevSimInFlightScenario(null);
+    }
+  }, [data?.userId, isDemoReadOnly, selectedDate, showDebugPanel, userId]);
+
+  const handleSimulate30Days = useCallback(async () => {
+    await runDebugSimulation("random");
+  }, [runDebugSimulation]);
+
+  const handleSimulateBurnoutSpiral = useCallback(async () => {
+    await runDebugSimulation("burnout_spiral");
+  }, [runDebugSimulation]);
+
+  const handleSimulateRecoveryRebound = useCallback(async () => {
+    await runDebugSimulation("recovery_rebound");
+  }, [runDebugSimulation]);
+
+  const handleExportSimulationLog = useCallback(async () => {
+    if (!showDebugPanel || isDemoReadOnly || !devSimWindow) return;
+
+    try {
+      setDevExportLoading(true);
+      setDevExportError(null);
+      setDevExportNotice(null);
+      const response = await fetch("/api/dev/simulate-30d/export", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          userId: devSimWindow.userId,
+          startDateISO: devSimWindow.startDate,
+          endDateISO: devSimWindow.endDate,
+          days: devSimWindow.days,
+          mode: devSimWindow.mode,
+        }),
+      });
+      const payload = (await response.json()) as
+        | {
+            ok: true;
+            data: {
+              meta: {
+                filename: string;
+              };
+            };
+          }
+        | { ok: false; error?: string; message?: string };
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.ok ? "Failed to export simulation log." : payload.error ?? payload.message ?? "Failed to export simulation log.");
+      }
+
+      const serialized = JSON.stringify(payload.data, null, 2);
+      const blob = new Blob([serialized], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      try {
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = payload.data.meta.filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+      setDevExportNotice("Simulation log exported.");
+    } catch (exportError) {
+      setDevExportError(exportError instanceof Error ? exportError.message : "Failed to export simulation log.");
+    } finally {
+      setDevExportLoading(false);
+    }
+  }, [devSimWindow, isDemoReadOnly, showDebugPanel]);
+
   const completeWelcomeFlow = useCallback(
     async (afterComplete?: () => void) => {
       if (welcomeModalSaving) return;
       try {
         setWelcomeModalSaving(true);
         setWelcomeModalError(null);
-        const response = await fetch("/api/setup/complete-welcome", { method: "POST" });
-        const payload = (await response.json()) as { ok?: boolean; error?: string; data?: SetupStatePayload };
-        if (!response.ok || !payload.ok || !payload.data) {
-          throw new Error(payload.error ?? "Failed to complete welcome flow.");
+        const ok = await markWelcomeSeen();
+        if (!ok) {
+          return;
         }
-        setSetupState(payload.data);
         setWelcomeModalAcknowledged(true);
         setWelcomeModalOpen(false);
         afterComplete?.();
@@ -475,11 +685,11 @@ export function ControlRoomV2({
         setWelcomeModalSaving(false);
       }
     },
-    [welcomeModalSaving]
+    [markWelcomeSeen, welcomeModalSaving]
   );
 
   const handleWelcomeContinue = () => {
-    if (setupState?.welcomeModalSeen || welcomeModalAcknowledged) {
+    if (setupState?.welcomeModalSeen) {
       setWelcomeModalError(null);
       setWelcomeModalOpen(false);
       return;
@@ -488,7 +698,7 @@ export function ControlRoomV2({
   };
 
   const handleWelcomeBeginCheckin = () => {
-    if (setupState?.welcomeModalSeen || welcomeModalAcknowledged) {
+    if (setupState?.welcomeModalSeen) {
       setWelcomeModalError(null);
       setWelcomeModalOpen(false);
       openCheckInModal(todayDayKey);
@@ -496,6 +706,16 @@ export function ControlRoomV2({
     }
     void completeWelcomeFlow(() => openCheckInModal(todayDayKey));
   };
+
+  const handleWelcomeClose = useCallback(() => {
+    setWelcomeModalError(null);
+    setWelcomeModalOpen(false);
+    setWelcomeModalAcknowledged(true);
+    if (!setupState?.welcomeModalSeen) {
+      void markWelcomeSeen({ suppressError: true });
+    }
+  }, [markWelcomeSeen, setupState?.welcomeModalSeen]);
+
   const handleOpenTutorial = () => {
     setWelcomeModalError(null);
     setWelcomeModalOpen(true);
@@ -547,6 +767,7 @@ export function ControlRoomV2({
 
   const handleResetDone = () => {
     setResetModalOpen(false);
+    clearCheckinLocalCache();
     setWelcomeModalAcknowledged(false);
     setWelcomeModalOpen(false);
     setWelcomeModalError(null);
@@ -561,7 +782,6 @@ export function ControlRoomV2({
     await signOut({ callbackUrl: "/" });
   };
 
-  const isDemoReadOnly = demoMode || Boolean(data?.demoMode);
   const effectivePlan = useMemo<"FREE" | "PRO">(() => {
     if (uiPlanMode === "free") return "FREE";
     if (uiPlanMode === "pro") return "PRO";
@@ -842,14 +1062,10 @@ export function ControlRoomV2({
   const nextActionDescription = isHistoricalView
     ? "New check-ins apply to the current operational day."
     : hasCheckinForOperationalDate
-      ? remainingWindowLabel
-        ? `Current operational day already has a check-in. Next check-in opens in ${remainingWindowLabel}.`
-        : "Current operational day already has a check-in. Next check-in window is pending."
+      ? "Current operational day already has a check-in."
       : nextCheckinAvailability.availableNow
         ? "Update system state with current signals and refresh guidance."
-        : remainingWindowLabel
-          ? `Next check-in opens in ${remainingWindowLabel}. Latest confirmed state remains active until the next window.`
-          : "Latest confirmed state remains active until the next check-in window opens.";
+        : "Latest confirmed state remains active until the next check-in window opens.";
   const nextActionStatusItems = [`Operational date: ${operationalDate}`, `Mode: ${checkinMode.toUpperCase()}`, nextWindowStatus];
   const latestUnlockedMilestoneLabel: "—" | "Day 3" | "Day 5" | "Day 7" =
     latestUnlockedMilestone === 3
@@ -1000,6 +1216,22 @@ export function ControlRoomV2({
                 onOpenCheckinForSelectedDay={() => openCheckInModal(selectedDate)}
                 uiPlanMode={uiPlanMode}
                 onUiPlanModeChange={handleUiPlanModeChange}
+                canSimulate30Days={!isDemoReadOnly && !devSimLoading}
+                simulate30DaysLoading={devSimLoading && devSimInFlightScenario === "random"}
+                simulate30DaysNotice={devSimNotice}
+                simulate30DaysError={devSimError}
+                onSimulate30Days={() => void handleSimulate30Days()}
+                canSimulateBurnoutSpiral={!isDemoReadOnly && !devSimLoading}
+                simulateBurnoutSpiralLoading={devSimLoading && devSimInFlightScenario === "burnout_spiral"}
+                onSimulateBurnoutSpiral={() => void handleSimulateBurnoutSpiral()}
+                canSimulateRecoveryRebound={!isDemoReadOnly && !devSimLoading}
+                simulateRecoveryReboundLoading={devSimLoading && devSimInFlightScenario === "recovery_rebound"}
+                onSimulateRecoveryRebound={() => void handleSimulateRecoveryRebound()}
+                canExportSimulationLog={!isDemoReadOnly && Boolean(devSimWindow)}
+                exportSimulationLogLoading={devExportLoading}
+                exportSimulationLogNotice={devExportNotice}
+                exportSimulationLogError={devExportError}
+                onExportSimulationLog={() => void handleExportSimulationLog()}
               />
             ) : null}
           </div>
@@ -1034,7 +1266,7 @@ export function ControlRoomV2({
           open={welcomeModalOpen}
           saving={welcomeModalSaving}
           error={welcomeModalError}
-          onClose={() => setWelcomeModalOpen(false)}
+          onClose={handleWelcomeClose}
           onFinish={handleWelcomeContinue}
           onBeginCheckin={handleWelcomeBeginCheckin}
         />
@@ -1215,6 +1447,22 @@ export function ControlRoomV2({
               onOpenCheckinForSelectedDay={() => openCheckInModal(selectedDate)}
               uiPlanMode={uiPlanMode}
               onUiPlanModeChange={handleUiPlanModeChange}
+              canSimulate30Days={!isDemoReadOnly && !devSimLoading}
+              simulate30DaysLoading={devSimLoading && devSimInFlightScenario === "random"}
+              simulate30DaysNotice={devSimNotice}
+              simulate30DaysError={devSimError}
+              onSimulate30Days={() => void handleSimulate30Days()}
+              canSimulateBurnoutSpiral={!isDemoReadOnly && !devSimLoading}
+              simulateBurnoutSpiralLoading={devSimLoading && devSimInFlightScenario === "burnout_spiral"}
+              onSimulateBurnoutSpiral={() => void handleSimulateBurnoutSpiral()}
+              canSimulateRecoveryRebound={!isDemoReadOnly && !devSimLoading}
+              simulateRecoveryReboundLoading={devSimLoading && devSimInFlightScenario === "recovery_rebound"}
+              onSimulateRecoveryRebound={() => void handleSimulateRecoveryRebound()}
+              canExportSimulationLog={!isDemoReadOnly && Boolean(devSimWindow)}
+              exportSimulationLogLoading={devExportLoading}
+              exportSimulationLogNotice={devExportNotice}
+              exportSimulationLogError={devExportError}
+              onExportSimulationLog={() => void handleExportSimulationLog()}
             />
           ) : null}
         </div>
@@ -1258,7 +1506,7 @@ export function ControlRoomV2({
         open={welcomeModalOpen}
         saving={welcomeModalSaving}
         error={welcomeModalError}
-        onClose={() => setWelcomeModalOpen(false)}
+        onClose={handleWelcomeClose}
         onFinish={handleWelcomeContinue}
         onBeginCheckin={handleWelcomeBeginCheckin}
       />

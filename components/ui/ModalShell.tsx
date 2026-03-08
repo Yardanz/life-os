@@ -183,7 +183,7 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[120] flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center px-3 py-3 sm:px-4">
       <button
         type="button"
         aria-label="Close modal"
@@ -198,12 +198,12 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
         aria-label={ariaLabel}
         tabIndex={-1}
         ref={panelRef}
-        className={`relative w-full max-h-[90vh] overflow-hidden rounded-2xl border border-cyan-400/25 bg-zinc-900/90 shadow-[0_0_0_1px_rgba(34,211,238,0.08),0_24px_60px_rgba(0,0,0,0.55)] ${
+        className={`relative w-full max-h-[92dvh] overflow-hidden rounded-2xl border border-cyan-400/25 bg-zinc-900/90 shadow-[0_0_0_1px_rgba(34,211,238,0.08),0_24px_60px_rgba(0,0,0,0.55)] sm:max-h-[90vh] ${
           isClosing ? "animate-[modalOut_180ms_ease-in_forwards]" : "animate-[modalIn_180ms_ease-out]"
         } ${panelClassName ?? "max-w-2xl p-4 sm:p-6"}`}
       >
         <div className="pointer-events-none absolute inset-0 rounded-2xl bg-[radial-gradient(circle_at_20%_0%,rgba(34,211,238,0.12),transparent_45%),radial-gradient(circle_at_80%_20%,rgba(14,116,144,0.2),transparent_40%)]" />
-        <div className="relative max-h-[90vh] overflow-y-auto">{content}</div>
+        <div className="relative max-h-[92dvh] overflow-y-auto overscroll-contain sm:max-h-[90vh]">{content}</div>
       </section>
     </div>,
     document.body

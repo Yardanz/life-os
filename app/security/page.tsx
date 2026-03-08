@@ -29,7 +29,7 @@ export default function SecurityPage() {
           </ul>
           <Link
             href="/.well-known/security.txt"
-            className="mt-4 inline-flex rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-zinc-500"
+            className="mt-4 inline-flex min-h-10 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-zinc-500"
           >
             Open security.txt
           </Link>

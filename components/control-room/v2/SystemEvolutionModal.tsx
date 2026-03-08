@@ -286,7 +286,7 @@ export function SystemEvolutionModal({
     <ModalShell open={open} onClose={onClose} ariaLabel="System evolution modal" panelClassName="max-w-5xl p-5 sm:p-6">
       {({ requestClose }) => (
         <div className="space-y-4">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">{content.heading}</p>
               <h2 className="mt-2 text-lg font-semibold text-zinc-100">{content.title}</h2>
@@ -294,7 +294,7 @@ export function SystemEvolutionModal({
             <button
               type="button"
               onClick={() => requestClose()}
-              className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500"
+              className="min-h-10 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500"
             >
               Close
             </button>

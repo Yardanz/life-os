@@ -10,7 +10,7 @@ export default async function MockInvoicePage({ searchParams }: MockInvoiceProps
   const order = Array.isArray(params.order) ? params.order[0] : params.order;
   return (
     <LifeOSBackground>
-      <main className="mx-auto min-h-screen w-full max-w-3xl px-6 py-10 text-zinc-100">
+      <main className="mx-auto min-h-screen w-full max-w-3xl px-4 py-10 text-zinc-100 sm:px-6">
         <section className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">NOWPayments Placeholder</p>
           <h1 className="mt-2 text-2xl font-semibold text-zinc-100">Invoice requested</h1>

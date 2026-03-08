@@ -42,10 +42,9 @@ export function BackNavButton({ fallbackHref = "/", className }: BackNavButtonPr
     <button
       type="button"
       onClick={handleBack}
-      className={
-        className ??
-        "inline-flex items-center rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500"
-      }
+      className={`inline-flex min-h-10 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500 ${
+        className ?? ""
+      }`}
     >
       Back
     </button>

@@ -50,7 +50,7 @@ function asPayload(value: unknown): SanitizedSnapshotPayload {
 function renderUnavailable(message: string) {
   return (
     <LifeOSBackground>
-      <main className="mx-auto min-h-screen w-full max-w-4xl px-6 py-10 text-zinc-100">
+      <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-10 text-zinc-100 sm:px-6">
         <section className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
           <h1 className="text-xl font-semibold text-zinc-100">{message}</h1>
           <Link
@@ -96,7 +96,7 @@ export default async function SnapshotPage({ params }: SnapshotPageProps) {
 
   return (
     <LifeOSBackground>
-      <main className="mx-auto min-h-screen w-full max-w-5xl px-6 py-10 text-zinc-100">
+      <main className="mx-auto min-h-screen w-full max-w-5xl px-4 py-10 text-zinc-100 sm:px-6">
         <header className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">System Snapshot</p>
           <h1 className="mt-2 text-2xl font-semibold text-zinc-100">Read-only system state</h1>

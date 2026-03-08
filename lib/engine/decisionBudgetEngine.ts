@@ -134,12 +134,20 @@ function evaluate72hRun(args: {
         ? riskHistoryRaw.reduce((sum, value) => sum + value, 0) / riskHistoryRaw.length
         : risk;
     const avgRisk14dProjected = clamp(avgRisk14dProjectedRaw + args.adaptiveRiskOffset, 0, 100);
+    const riskDelta7dProjected =
+      riskHistoryRaw.length >= 8 ? risk - riskHistoryRaw[Math.max(0, riskHistoryRaw.length - 8)] : 0;
     const guardrail = evaluateGuardrail({
       currentRisk: risk,
       avgRisk14d: avgRisk14dProjected,
       burnout,
       confidence: args.confidence,
       adaptiveRiskOffset: args.adaptiveRiskOffset,
+      recoveryDebt: args.context.currentBio.recoveryDebt,
+      adaptiveCapacity: args.context.currentBio.adaptiveCapacity,
+      resilience: args.context.currentBio.resilienceIndex,
+      overloadLevel: args.context.currentBio.overloadLevel,
+      riskDelta7d: riskDelta7dProjected,
+      burnoutDelta7d: burnout - args.context.currentBio.burnoutRiskIndex,
     });
 
     if (safeWindowHours === 72 && (risk >= 65 || guardrail.level >= 1)) {

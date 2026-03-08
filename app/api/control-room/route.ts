@@ -263,6 +263,49 @@ function normalizeInputs(stressLevel: number | null | undefined, metrics: Parsed
   return { S, W, DW, L, M, T };
 }
 
+function deriveRecoveryPatternForGuardrail(input: {
+  lifeScoreDelta7d: number;
+  riskDelta7d: number;
+  burnoutDelta7d: number;
+  load: number;
+  recovery: number;
+  sleepHours: number | null | undefined;
+  sleepQuality: number | null | undefined;
+  stress: number | null | undefined;
+  deepWorkMin: number | null | undefined;
+  workout: number | null | undefined;
+  circadianAlignment: number;
+}): { streakDays: number; strength: number } | null {
+  let score = 0;
+
+  if (input.riskDelta7d <= -3) score += 1.6;
+  if (input.burnoutDelta7d <= -2) score += 1.2;
+  if (input.lifeScoreDelta7d >= 1.5) score += 1;
+  if (input.recovery >= input.load + 2) score += 1.2;
+  if ((input.sleepHours ?? 0) >= 6.9) score += 0.8;
+  if ((input.sleepQuality ?? 0) >= 3.4) score += 0.7;
+  if ((input.stress ?? 10) <= 6.1) score += 0.8;
+  if ((input.deepWorkMin ?? 180) <= 120) score += 0.7;
+  if ((input.workout ?? 0) > 0) score += 0.4;
+  if (input.circadianAlignment >= 66) score += 0.6;
+
+  if (score < 4) return null;
+
+  const streakDays = clamp(
+    Math.round(
+      1 +
+        (input.riskDelta7d <= -8 ? 4 : input.riskDelta7d <= -4 ? 3 : input.riskDelta7d <= -2 ? 2 : 1) +
+        (input.burnoutDelta7d <= -6 ? 3 : input.burnoutDelta7d <= -3 ? 2 : input.burnoutDelta7d <= -1 ? 1 : 0)
+    ),
+    1,
+    10
+  );
+  const strength = clamp(score / 8.5, 0, 1);
+  if (streakDays < 3 || strength < 0.5) return null;
+
+  return { streakDays, strength };
+}
+
 function applyScenario(avgInputs: AverageInputs, scenarioType: ScenarioType): AverageInputs {
   if (scenarioType === "STABILIZATION") {
     return {
@@ -2129,12 +2172,42 @@ export async function GET(request: Request) {
       .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
     const avgRisk14dRaw = risk14Values.length > 0 ? average(risk14Values) : systemMetrics.risk;
     const avgRisk14d = clamp(avgRisk14dRaw + (user.adaptiveRiskOffset ?? 0), 0, 100);
+    const recentRiskWindow = risk14Values.slice(-7);
+    const previousRiskWindow = risk14Values.slice(-14, -7);
+    const riskDelta7d =
+      recentRiskWindow.length > 0
+        ? average(recentRiskWindow) - (previousRiskWindow.length > 0 ? average(previousRiskWindow) : recentRiskWindow[0] ?? 0)
+        : 0;
+    const recoveryPatternForGuardrail = deriveRecoveryPatternForGuardrail({
+      lifeScoreDelta7d: lifeScoreTrend,
+      riskDelta7d,
+      burnoutDelta7d: burnoutTrend,
+      load: systemMetrics.load,
+      recovery: systemMetrics.recovery,
+      sleepHours: metrics.sleepHours,
+      sleepQuality: metrics.sleepQuality,
+      stress: checkin?.stressLevel ?? null,
+      deepWorkMin: metrics.deepWorkMin,
+      workout: metrics.workout,
+      circadianAlignment: resolvedBio.circadianAlignment,
+    });
     const guardrail = evaluateGuardrail({
       currentRisk: systemMetrics.risk,
       avgRisk14d,
       burnout: resolvedBio.burnoutRiskIndex,
       confidence: modelConfidence.confidence,
       adaptiveRiskOffset: user.adaptiveRiskOffset ?? 0,
+      recoveryDebt: resolvedBio.recoveryDebt,
+      adaptiveCapacity: resolvedBio.adaptiveCapacity,
+      resilience: resolvedBio.resilienceIndex,
+      overloadLevel: resolvedBio.overloadLevel,
+      lifeScore: toNumber(snapshot.lifeScore),
+      lifeScoreDelta7d: lifeScoreTrend,
+      riskDelta7d,
+      burnoutDelta7d: burnoutTrend,
+      load: systemMetrics.load,
+      recovery: systemMetrics.recovery,
+      recoveryPattern: recoveryPatternForGuardrail,
     });
 
     const activeProtocolCandidates = await prisma.protocolRun.findMany({

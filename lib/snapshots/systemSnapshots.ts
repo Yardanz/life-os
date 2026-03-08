@@ -75,6 +75,9 @@ async function buildSnapshotPayload(userId: string) {
         energyReserve: true,
         cognitiveFatigue: true,
         strainIndex: true,
+        overloadLevel: true,
+        recoveryDebt: true,
+        adaptiveCapacity: true,
         stressLoad: true,
         burnoutRiskIndex: true,
         parasympatheticDrive: true,
@@ -96,6 +99,13 @@ async function buildSnapshotPayload(userId: string) {
     burnout: metrics.burnout,
     confidence,
     adaptiveRiskOffset: user.adaptiveRiskOffset ?? 0,
+    recoveryDebt: latestBio.recoveryDebt,
+    adaptiveCapacity: latestBio.adaptiveCapacity,
+    resilience: latestBio.resilienceIndex,
+    overloadLevel: latestBio.overloadLevel,
+    lifeScore: round1(Number(latestStat.lifeScore)),
+    load: metrics.load,
+    recovery: metrics.recovery,
   });
 
   return allowedSnapshotPayload({

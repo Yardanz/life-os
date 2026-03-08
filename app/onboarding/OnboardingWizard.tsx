@@ -74,7 +74,7 @@ export function OnboardingWizard({ userEmail }: OnboardingWizardProps) {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-6 py-10 text-zinc-100">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-4 py-10 text-zinc-100 sm:px-6">
       <section className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/80 p-6 shadow-[0_0_0_1px_rgba(34,211,238,0.08),0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -113,12 +113,12 @@ export function OnboardingWizard({ userEmail }: OnboardingWizardProps) {
           </div>
         ) : null}
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap sm:items-center">
           <button
             type="button"
             disabled={stepIndex === 0 || isSubmitting}
             onClick={() => setStepIndex((value) => Math.max(0, value - 1))}
-            className="rounded-md border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-10 w-full rounded-md border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             Back
           </button>
@@ -128,7 +128,7 @@ export function OnboardingWizard({ userEmail }: OnboardingWizardProps) {
               type="button"
               disabled={isSubmitting}
               onClick={() => setStepIndex((value) => Math.min(total - 1, value + 1))}
-              className="rounded-md border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-10 w-full rounded-md border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               Next
             </button>
@@ -137,7 +137,7 @@ export function OnboardingWizard({ userEmail }: OnboardingWizardProps) {
               type="button"
               disabled={isSubmitting}
               onClick={() => void handleFinish()}
-              className="rounded-md border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-10 w-full rounded-md border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               {isSubmitting ? "Finishing..." : "Finish"}
             </button>

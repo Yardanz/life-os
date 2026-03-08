@@ -20,7 +20,7 @@ function FooterGroup({
       <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">{title}</p>
       <div className="mt-2 space-y-1.5">
         {links.map((item) => (
-          <Link key={item.href} href={item.href} className="block text-xs text-zinc-400 transition hover:text-zinc-200">
+          <Link key={item.href} href={item.href} className="block py-0.5 text-xs text-zinc-400 transition hover:text-zinc-200">
             {item.label}
           </Link>
         ))}

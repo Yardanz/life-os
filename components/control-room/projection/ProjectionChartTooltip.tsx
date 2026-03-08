@@ -50,23 +50,23 @@ export function ProjectionChartTooltip({ active, payload, metric }: ProjectionCh
     baseline !== undefined && compareB !== undefined ? Number((compareB - baseline).toFixed(1)) : null;
 
   return (
-    <div className="min-w-44 rounded-md border border-zinc-700/80 bg-zinc-950/95 px-3 py-2 text-xs shadow-lg shadow-black/40">
+    <div className="w-[min(15rem,calc(100vw-2.5rem))] rounded-md border border-zinc-700/80 bg-zinc-950/95 px-2.5 py-2 text-xs shadow-lg shadow-black/40 sm:px-3">
       <p className="text-zinc-200">{formatDateLabel(row.dateISO ?? "")}</p>
       <p className="mb-2 text-[11px] text-zinc-500">{metricTitle(metric)}</p>
       <div className="space-y-1 font-mono tabular-nums">
-        <div className="grid grid-cols-[34px_50px_42px] gap-x-2 text-cyan-200">
+        <div className="grid grid-cols-[28px_1fr_44px] gap-x-2 text-cyan-200">
           <span>BASE</span>
           <span className="text-right">{toDisplayValue(baseline)}</span>
           <span className="text-right text-zinc-500">-</span>
         </div>
-        <div className="grid grid-cols-[34px_50px_42px] gap-x-2 text-emerald-200">
+        <div className="grid grid-cols-[28px_1fr_44px] gap-x-2 text-emerald-200">
           <span>STB</span>
           <span className="text-right">{toDisplayValue(stabilize)}</span>
           <span className="text-right text-zinc-400">
             {stabilizeDelta !== null ? `${stabilizeDelta >= 0 ? "+" : ""}${stabilizeDelta.toFixed(1)}` : "-"}
           </span>
         </div>
-        <div className="grid grid-cols-[34px_50px_42px] gap-x-2 text-rose-200">
+        <div className="grid grid-cols-[28px_1fr_44px] gap-x-2 text-rose-200">
           <span>OVR</span>
           <span className="text-right">{toDisplayValue(overload)}</span>
           <span className="text-right text-zinc-400">
@@ -74,14 +74,14 @@ export function ProjectionChartTooltip({ active, payload, metric }: ProjectionCh
           </span>
         </div>
         {row.protocol !== undefined ? (
-          <div className="grid grid-cols-[34px_50px_42px] gap-x-2 text-sky-200">
+          <div className="grid grid-cols-[28px_1fr_44px] gap-x-2 text-sky-200">
             <span>ACP</span>
             <span className="text-right">{toDisplayValue(row.protocol)}</span>
             <span className="text-right text-zinc-500">-</span>
           </div>
         ) : null}
         {row.compareB !== undefined ? (
-          <div className="grid grid-cols-[34px_50px_42px] gap-x-2 text-amber-200">
+          <div className="grid grid-cols-[28px_1fr_44px] gap-x-2 text-amber-200">
             <span>B</span>
             <span className="text-right">{toDisplayValue(compareB)}</span>
             <span className="text-right text-zinc-400">

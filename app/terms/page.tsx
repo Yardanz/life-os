@@ -5,7 +5,7 @@ import { PublicFooter } from "@/components/public/PublicFooter";
 export default function TermsPage() {
   return (
     <LifeOSBackground>
-      <main className="mx-auto min-h-screen w-full max-w-5xl px-4 py-10 text-zinc-100 sm:px-6 sm:py-12">
+      <main className="mx-auto min-h-screen w-full max-w-5xl overflow-x-hidden px-4 py-10 text-zinc-100 sm:px-6 sm:py-12">
         <header className="mb-8 sm:mb-10">
           <BackNavButton className="inline-flex items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40" />
           <div className="mt-4 space-y-2">

@@ -42,7 +42,7 @@ export function PricingCapabilityActions({
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:auto-rows-fr md:grid-cols-2">
-        <article className="flex h-full min-h-[18rem] flex-col rounded-xl border border-cyan-400/25 bg-cyan-500/5 p-5">
+        <article className="flex h-full min-h-[16rem] flex-col rounded-xl border border-cyan-400/25 bg-cyan-500/5 p-5 sm:min-h-[18rem]">
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.18em] text-cyan-200/80">Monthly</p>
             <h3 className="text-lg font-semibold text-zinc-100">Operator License</h3>
@@ -61,14 +61,14 @@ export function PricingCapabilityActions({
                 type="button"
                 onClick={() => void createInvoice("OPERATOR_MONTHLY")}
                 disabled={loadingPlan !== null}
-                className="w-full rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-10 w-full rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loadingPlan === "OPERATOR_MONTHLY" ? "Creating invoice..." : "Pay monthly"}
               </button>
             ) : (
               <Link
                 href="/pricing?auth=1&callbackUrl=/pricing"
-                className="inline-flex w-full justify-center rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300"
+                className="inline-flex min-h-10 w-full items-center justify-center rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300"
               >
                 Sign in to continue
               </Link>
@@ -76,7 +76,7 @@ export function PricingCapabilityActions({
           </div>
         </article>
 
-        <article className="flex h-full min-h-[18rem] flex-col rounded-xl border border-cyan-400/25 bg-cyan-500/5 p-5">
+        <article className="flex h-full min-h-[16rem] flex-col rounded-xl border border-cyan-400/25 bg-cyan-500/5 p-5 sm:min-h-[18rem]">
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.18em] text-cyan-200/80">Yearly</p>
             <h3 className="text-lg font-semibold text-zinc-100">Operator License</h3>
@@ -95,14 +95,14 @@ export function PricingCapabilityActions({
                 type="button"
                 onClick={() => void createInvoice("OPERATOR_YEARLY")}
                 disabled={loadingPlan !== null}
-                className="w-full rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-10 w-full rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loadingPlan === "OPERATOR_YEARLY" ? "Creating invoice..." : "Pay yearly"}
               </button>
             ) : (
               <Link
                 href="/pricing?auth=1&callbackUrl=/pricing"
-                className="inline-flex w-full justify-center rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300"
+                className="inline-flex min-h-10 w-full items-center justify-center rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300"
               >
                 Sign in to continue
               </Link>
@@ -114,7 +114,7 @@ export function PricingCapabilityActions({
       <div className="flex flex-wrap items-center gap-2">
         <Link
           href={returnHref}
-          className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:border-zinc-500"
+          className="inline-flex min-h-10 items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:border-zinc-500"
         >
           Return to Control Room
         </Link>

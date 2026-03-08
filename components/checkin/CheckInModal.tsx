@@ -38,7 +38,7 @@ export function CheckInModal({
             <button
               type="button"
               onClick={() => requestClose()}
-              className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1 text-xs text-zinc-200 transition hover:border-zinc-500"
+              className="min-h-9 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1 text-xs text-zinc-200 transition hover:border-zinc-500"
             >
               Close
             </button>

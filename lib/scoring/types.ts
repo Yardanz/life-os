@@ -177,6 +177,23 @@ export interface EngineInput {
   config: WeightConfigInput;
   previousLifeScores: number[];
   lifeScoreTrend?: number;
+  controlLayer?: {
+    protocol?: {
+      active: boolean;
+      mode: "STANDARD" | "STABILIZE";
+      horizonHours?: number;
+    };
+    antiChaos?: {
+      active: boolean;
+      severity: "WARNING" | "CRITICAL";
+      daysSinceActivation?: number;
+    };
+    recoveryPattern?: {
+      streakDays: number;
+      strength: number;
+      reasons?: string[];
+    };
+  };
   calibration?: {
     calibrationActive: boolean;
     confidence: number;

@@ -109,12 +109,15 @@ export function DailyCheckinForm({
   const [error, setError] = useState<string | null>(null);
   const [projectionLimited, setProjectionLimited] = useState(false);
   const [checkinsDone, setCheckinsDone] = useState(0);
+  const [setupStateLoaded, setSetupStateLoaded] = useState(false);
+  const [isLoadingYesterday, setIsLoadingYesterday] = useState(false);
   const [sleepHoursInput, setSleepHoursInput] = useState<string>(String(initialFormRef.current.sleepHours));
   const [sleepQualityInput, setSleepQualityInput] = useState<string>(String(initialFormRef.current.sleepQuality));
   const [moneyAdjusted, setMoneyAdjusted] = useState(false);
   const startWithYesterdayAppliedRef = useRef(false);
 
   const canSubmit = useMemo(() => !isSubmitting && !isUpdatingScreen, [isSubmitting, isUpdatingScreen]);
+  const canUseYesterday = useMemo(() => setupStateLoaded && checkinsDone > 0, [checkinsDone, setupStateLoaded]);
   const hasChanges = useMemo(() => {
     const initial = baseForm;
     return (
@@ -209,6 +212,7 @@ export function DailyCheckinForm({
         if (!response.ok || !payload.ok) {
           setProjectionLimited(true);
           setCheckinsDone(0);
+          setSetupStateLoaded(true);
           return;
         }
         setProjectionLimited(payload.data.confidence < 0.6);
@@ -217,10 +221,12 @@ export function DailyCheckinForm({
             ? Math.max(0, Math.floor(payload.data.calibrationCheckinsDone))
             : 0
         );
+        setSetupStateLoaded(true);
       } catch {
         if (!cancelled) {
           setProjectionLimited(true);
           setCheckinsDone(0);
+          setSetupStateLoaded(true);
         }
       }
     };
@@ -309,29 +315,52 @@ export function DailyCheckinForm({
     };
   }, [selectedDate]);
 
-  const applyYesterday = useCallback(() => {
+  const applyYesterday = useCallback(async () => {
+    if (!canUseYesterday || isLoadingYesterday) return;
     setError(null);
+    setIsLoadingYesterday(true);
     try {
-      const yesterdayKey = getDateKey(addDaysISO(selectedDate, -1));
-      const raw = localStorage.getItem(yesterdayKey) ?? localStorage.getItem(`${STORAGE_PREFIX}.last`);
-      if (!raw) {
+      const yesterdayIso = addDaysISO(selectedDate, -1);
+      const response = await fetch(
+        `/api/checkin?date=${encodeURIComponent(yesterdayIso)}&tzOffsetMinutes=${-new Date().getTimezoneOffset()}`,
+        { cache: "no-store" }
+      );
+      const payload = (await response.json()) as
+        | {
+            ok: true;
+            data:
+              | {
+                  sleepHours: number | null;
+                  sleepQuality: number | null;
+                  bedtimeMinutes: number | null;
+                  wakeTimeMinutes: number | null;
+                  workout: number | null;
+                  deepWorkMin: number | null;
+                  learningMin: number | null;
+                  moneyDelta: number | null;
+                  stress: number | null;
+                }
+              | null;
+          }
+        | { ok?: false; error?: string };
+      if (!response.ok || !("ok" in payload) || !payload.ok || !payload.data) {
         setError("No data from yesterday found.");
         return;
       }
 
-      const parsed = JSON.parse(raw) as Partial<CheckinFormState>;
+      const previous = payload.data;
       const base = form;
       const next = {
         ...base,
-        sleepHours: Number(parsed.sleepHours ?? base.sleepHours),
-        sleepQuality: Number(parsed.sleepQuality ?? base.sleepQuality),
-        bedtimeMinutes: Number(parsed.bedtimeMinutes ?? base.bedtimeMinutes),
-        wakeTimeMinutes: Number(parsed.wakeTimeMinutes ?? base.wakeTimeMinutes),
-        workout: Boolean(parsed.workout ?? base.workout),
-        deepWorkMin: Number(parsed.deepWorkMin ?? base.deepWorkMin),
-        learningMin: Number(parsed.learningMin ?? base.learningMin),
-        moneyDelta: String(parsed.moneyDelta ?? base.moneyDelta),
-        stress: Number(parsed.stress ?? base.stress),
+        sleepHours: Number(previous.sleepHours ?? base.sleepHours),
+        sleepQuality: Number(previous.sleepQuality ?? base.sleepQuality),
+        bedtimeMinutes: Number(previous.bedtimeMinutes ?? base.bedtimeMinutes),
+        wakeTimeMinutes: Number(previous.wakeTimeMinutes ?? base.wakeTimeMinutes),
+        workout: Number(previous.workout ?? (base.workout ? 1 : 0)) > 0,
+        deepWorkMin: Number(previous.deepWorkMin ?? base.deepWorkMin),
+        learningMin: Number(previous.learningMin ?? base.learningMin),
+        moneyDelta: String(previous.moneyDelta ?? base.moneyDelta),
+        stress: Number(previous.stress ?? base.stress),
       };
       const normalized = normalizeCheckinCore(next);
       setForm((prev) => ({
@@ -344,14 +373,16 @@ export function DailyCheckinForm({
       setMoneyAdjusted(normalized.adjusted.moneyDelta);
     } catch {
       setError("Failed to load yesterday metrics.");
+    } finally {
+      setIsLoadingYesterday(false);
     }
-  }, [form, selectedDate]);
+  }, [canUseYesterday, form, isLoadingYesterday, selectedDate]);
 
   useEffect(() => {
-    if (!startWithYesterday || startWithYesterdayAppliedRef.current) return;
+    if (!startWithYesterday || !canUseYesterday || startWithYesterdayAppliedRef.current) return;
     startWithYesterdayAppliedRef.current = true;
-    applyYesterday();
-  }, [applyYesterday, startWithYesterday]);
+    void applyYesterday();
+  }, [applyYesterday, canUseYesterday, startWithYesterday]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -730,23 +761,25 @@ export function DailyCheckinForm({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-center">
         <button
           type="submit"
           disabled={!canApply}
-          className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-medium text-zinc-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-700/60 disabled:text-zinc-300"
+          className="min-h-10 w-full rounded-md bg-emerald-500 px-4 py-2 text-sm font-medium text-zinc-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-700/60 disabled:text-zinc-300 sm:w-auto"
         >
           {isSubmitting ? "Applying..." : "Apply to System"}
         </button>
 
-        <button
-          type="button"
-          disabled={!canSubmit}
-          onClick={applyYesterday}
-          className="rounded-md border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          Use yesterday
-        </button>
+        {canUseYesterday ? (
+          <button
+            type="button"
+            disabled={!canSubmit || isLoadingYesterday}
+            onClick={() => void applyYesterday()}
+            className="min-h-10 w-full rounded-md border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          >
+            {isLoadingYesterday ? "Loading..." : "Use yesterday"}
+          </button>
+        ) : null}
       </div>
     </form>
   );

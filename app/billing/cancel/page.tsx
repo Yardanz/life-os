@@ -4,7 +4,7 @@ import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 export default function BillingCancelPage() {
   return (
     <LifeOSBackground>
-      <main className="mx-auto min-h-screen w-full max-w-3xl px-6 py-10 text-zinc-100">
+      <main className="mx-auto min-h-screen w-full max-w-3xl px-4 py-10 text-zinc-100 sm:px-6">
         <section className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Billing</p>
           <h1 className="mt-2 text-2xl font-semibold text-zinc-100">Payment canceled</h1>
@@ -20,4 +20,3 @@ export default function BillingCancelPage() {
     </LifeOSBackground>
   );
 }
-

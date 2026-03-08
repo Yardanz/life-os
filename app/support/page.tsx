@@ -33,7 +33,7 @@ export default function SupportPage() {
           >
             Email support
           </a>
-          <p className="mt-2 text-sm text-zinc-300">{supportEmail}</p>
+          <p className="mt-2 break-all text-sm text-zinc-300">{supportEmail}</p>
         </section>
 
         <section className="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">

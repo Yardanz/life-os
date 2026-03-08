@@ -40,7 +40,7 @@ export function PageHeader({
           </Link>
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">{kicker}</p>
-            <h1 className="text-3xl font-semibold text-zinc-100 sm:text-4xl">{title}</h1>
+            <h1 className="text-2xl font-semibold text-zinc-100 sm:text-4xl">{title}</h1>
             {subtitle ? <p className="max-w-2xl text-sm text-zinc-400">{subtitle}</p> : null}
             {showBackToHome ? (
               <Link
@@ -52,7 +52,9 @@ export function PageHeader({
             ) : null}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-sm">{navSlot ?? <PublicNavLinks className="flex flex-wrap items-center gap-2 text-sm" />}</div>
+        <div className="flex w-full flex-wrap items-center gap-2 text-sm sm:w-auto">
+          {navSlot ?? <PublicNavLinks className="flex flex-wrap items-center gap-2 text-sm" />}
+        </div>
       </div>
     </header>
   );

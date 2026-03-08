@@ -12,7 +12,7 @@ export default function PrivacyPage() {
 
   return (
     <LifeOSBackground>
-      <main className="mx-auto min-h-screen w-full max-w-5xl px-4 py-10 text-zinc-100 sm:px-6 sm:py-12">
+      <main className="mx-auto min-h-screen w-full max-w-5xl overflow-x-hidden px-4 py-10 text-zinc-100 sm:px-6 sm:py-12">
         <header className="mb-8 sm:mb-10">
           <BackNavButton className="inline-flex items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40" />
           <div className="mt-4 space-y-2">
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
 
           <div>
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Contact</h2>
-            <a href={mailtoHref} className="mt-3 inline-flex rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-zinc-500">
+            <a href={mailtoHref} className="mt-3 inline-flex min-h-10 break-all rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-zinc-500">
               {supportEmail}
             </a>
           </div>

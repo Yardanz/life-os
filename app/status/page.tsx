@@ -106,7 +106,7 @@ export default function StatusPage() {
             </article>
             <article className="rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-2.5">
               <p className="text-[11px] uppercase tracking-[0.12em] text-zinc-500">Timestamp</p>
-              <p className="mt-1 text-zinc-100">{formatTimestamp(health?.ts)}</p>
+              <p className="mt-1 break-words text-zinc-100">{formatTimestamp(health?.ts)}</p>
             </article>
           </div>
 

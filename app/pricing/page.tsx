@@ -141,7 +141,7 @@ export default async function PricingPage() {
 
   return (
     <LifeOSBackground>
-      <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-10 text-zinc-100 sm:py-12">
+      <main className="pricing-main mx-auto min-h-screen w-full max-w-6xl px-4 py-10 text-zinc-100 sm:px-6 sm:py-12">
         <header className="mb-8 sm:mb-10">
           <BackNavButton className="inline-flex items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40" />
           <div className="mt-4 space-y-2">
@@ -155,7 +155,7 @@ export default async function PricingPage() {
 
         <section className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4 sm:p-5">
           {CAPABILITY_SECTIONS.map((section) => (
-            <article key={section.title} className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/60">
+            <article key={section.title} className="light-lift-card overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/60">
               <header className="border-b border-zinc-800 bg-zinc-950/70 px-4 py-3.5">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-300">{section.title}</h2>
                 <p className="mt-1 text-xs text-zinc-400">{section.summary}</p>
@@ -181,7 +181,7 @@ export default async function PricingPage() {
               </div>
               <div className="space-y-2 p-3 md:hidden">
                 {section.rows.map((row) => (
-                  <div key={`${section.title}-mobile-${row.capability}`} className="rounded-md border border-zinc-800 bg-zinc-900/70 p-3.5">
+                  <div key={`${section.title}-mobile-${row.capability}`} className="light-lift-card rounded-md border border-zinc-800 bg-zinc-900/70 p-3.5">
                     <p className="text-sm font-medium text-zinc-100">{row.capability}</p>
                     <p className="mt-1 text-xs text-zinc-400">{row.description}</p>
                     <p className="mt-2 text-xs text-zinc-500">
@@ -194,7 +194,7 @@ export default async function PricingPage() {
           ))}
         </section>
 
-        <section className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/80 p-6">
+        <section className="light-lift-card mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/80 p-6">
           <div className="mb-5 space-y-1.5">
             <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">License plans</p>
             <h2 className="text-lg font-semibold text-zinc-100">Enable Operator depth</h2>

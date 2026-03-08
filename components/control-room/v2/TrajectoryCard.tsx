@@ -92,7 +92,7 @@ export function TrajectoryCard({ points, risk, recovery }: TrajectoryCardProps) 
       <div className="relative mt-3 rounded-lg border border-zinc-800 bg-zinc-950/70 p-3">
         <svg
           viewBox={`0 0 ${view.width} ${view.height}`}
-          className="h-64 w-full"
+          className="h-56 w-full sm:h-64"
           role="img"
           aria-label="Life score trend for last 7 days"
           onMouseMove={(event) => updateHoverByClientX(event.clientX, event.currentTarget.getBoundingClientRect())}
@@ -182,10 +182,10 @@ export function TrajectoryCard({ points, risk, recovery }: TrajectoryCardProps) 
 
         {hoveredPoint ? (
           <div
-            className="pointer-events-none absolute z-10 whitespace-nowrap rounded-md border border-zinc-700 bg-zinc-900/95 px-2 py-1 text-xs text-zinc-200 shadow-[0_8px_20px_rgba(0,0,0,0.45)]"
+            className="pointer-events-none absolute z-10 max-w-[min(13rem,calc(100%-1rem))] rounded-md border border-zinc-700 bg-zinc-900/95 px-2 py-1 text-xs text-zinc-200 shadow-[0_8px_20px_rgba(0,0,0,0.45)]"
             style={{
-              left: `calc(${((hoveredPoint.x / view.width) * 100).toFixed(2)}% - ${isRightEdgeHover ? 120 : 48}px)`,
-              top: `calc(${((hoveredPoint.y / view.height) * 100).toFixed(2)}% - 52px)`,
+              left: `clamp(8px, calc(${((hoveredPoint.x / view.width) * 100).toFixed(2)}% - ${isRightEdgeHover ? 120 : 48}px), calc(100% - 10rem))`,
+              top: `clamp(8px, calc(${((hoveredPoint.y / view.height) * 100).toFixed(2)}% - 52px), calc(100% - 4.2rem))`,
             }}
           >
             <p className="font-medium">

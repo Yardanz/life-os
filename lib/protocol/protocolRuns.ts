@@ -151,6 +151,9 @@ async function getCurrentProtocolContext(userId: string): Promise<{
         energyReserve: true,
         cognitiveFatigue: true,
         strainIndex: true,
+        overloadLevel: true,
+        recoveryDebt: true,
+        adaptiveCapacity: true,
         stressLoad: true,
         burnoutRiskIndex: true,
         parasympatheticDrive: true,
@@ -215,6 +218,30 @@ async function getCurrentProtocolContext(userId: string): Promise<{
           return sum + rowRisk;
         }, 0) / bioRows14d.length
       : latestInputs.risk;
+  const recentRiskRows = bioRows14d.slice(0, 7);
+  const previousRiskRows = bioRows14d.slice(7, 14);
+  const recentRiskAvg =
+    recentRiskRows.length > 0
+      ? recentRiskRows.reduce((sum, row) => {
+          const rowRisk = clamp(
+            row.burnoutRiskIndex * 0.5 + row.strainIndex * 0.35 + (100 - row.energyReserve) * 0.15,
+            0,
+            100
+          );
+          return sum + rowRisk;
+        }, 0) / recentRiskRows.length
+      : latestInputs.risk;
+  const previousRiskAvg =
+    previousRiskRows.length > 0
+      ? previousRiskRows.reduce((sum, row) => {
+          const rowRisk = clamp(
+            row.burnoutRiskIndex * 0.5 + row.strainIndex * 0.35 + (100 - row.energyReserve) * 0.15,
+            0,
+            100
+          );
+          return sum + rowRisk;
+        }, 0) / previousRiskRows.length
+      : recentRiskAvg;
   const adaptiveRiskOffset = user.adaptiveRiskOffset ?? 0;
   const avgRisk14d = round1(clamp(avgRisk14dRaw + adaptiveRiskOffset, 0, 100));
 
@@ -224,6 +251,13 @@ async function getCurrentProtocolContext(userId: string): Promise<{
     burnout: latestInputs.burnout,
     confidence,
     adaptiveRiskOffset,
+    recoveryDebt: latestBio.recoveryDebt,
+    adaptiveCapacity: latestBio.adaptiveCapacity,
+    resilience: latestBio.resilienceIndex,
+    overloadLevel: latestBio.overloadLevel,
+    riskDelta7d: round1(recentRiskAvg - previousRiskAvg),
+    load: latestInputs.load,
+    recovery: latestInputs.recovery,
   });
 
   return {

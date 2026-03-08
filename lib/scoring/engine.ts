@@ -177,9 +177,44 @@ export function computeDayV3(input: EngineInput): EngineOutput {
   const circadianAlignmentPenalty = clamp(input.checkIn.circadianAlignmentPenalty ?? 0, 0, 100);
   const regularityPenalty = clamp(input.checkIn.regularityPenalty ?? 0, 0, 12);
   const regularityScale = sleepRegularity < 35 ? 0.75 : sleepRegularity < 50 ? 0.85 : 1;
+  const protocolActive = input.controlLayer?.protocol?.active === true;
+  const protocolMode = protocolActive ? input.controlLayer?.protocol?.mode ?? "STANDARD" : null;
+  const antiChaosActive = input.controlLayer?.antiChaos?.active === true;
+  const antiChaosSeverity = antiChaosActive ? input.controlLayer?.antiChaos?.severity ?? "WARNING" : null;
+  const antiChaosDaysSinceActivation = antiChaosActive ? input.controlLayer?.antiChaos?.daysSinceActivation ?? 0 : 0;
+  const antiChaosAgeDecay = antiChaosActive ? clamp(1 - antiChaosDaysSinceActivation * 0.08, 0.45, 1) : 0;
+  const protocolStabilizationIntensity = protocolActive ? (protocolMode === "STABILIZE" ? 0.14 : 0.08) : 0;
+  const antiChaosStabilizationIntensity =
+    antiChaosActive ? (antiChaosSeverity === "CRITICAL" ? 0.18 : 0.11) * antiChaosAgeDecay : 0;
+  const stabilizationIntensity = clamp(protocolStabilizationIntensity + antiChaosStabilizationIntensity, 0, 0.32);
+  const recoveryStreakDays = clamp(Math.round(input.controlLayer?.recoveryPattern?.streakDays ?? 0), 0, 14);
+  const recoveryPatternStrength = clamp(input.controlLayer?.recoveryPattern?.strength ?? 0, 0, 1);
+  const reboundPhase1 =
+    recoveryStreakDays >= 3 ? clamp((recoveryStreakDays - 2) / 2, 0, 1) * recoveryPatternStrength : 0;
+  const reboundPhase2 =
+    recoveryStreakDays >= 4 ? clamp((recoveryStreakDays - 3) / 2.5, 0, 1) * recoveryPatternStrength : 0;
+  const reboundPhase3 =
+    recoveryStreakDays >= 6 ? clamp((recoveryStreakDays - 5) / 3, 0, 1) * recoveryPatternStrength : 0;
+  const sustainedRecoverySignal =
+    recoveryStreakDays >= 3
+      ? clamp((recoveryStreakDays - 2) / 5, 0, 1) * clamp((recoveryPatternStrength - 0.35) / 0.65, 0, 1)
+      : 0;
+  const reboundIntensity = clamp(
+    reboundPhase1 * 0.08 + reboundPhase2 * 0.11 + reboundPhase3 * 0.14 + sustainedRecoverySignal * 0.1,
+    0,
+    0.3
+  );
+  const totalStabilizationIntensity = clamp(stabilizationIntensity + reboundIntensity, 0, 0.52);
 
-  const load = clamp(0.6 * DW + 0.4 * L + workoutStrainWeight * W, 0, 1);
+  const baseLoad = clamp(0.6 * DW + 0.4 * L + workoutStrainWeight * W, 0, 1);
+  const load = clamp(baseLoad * (1 - totalStabilizationIntensity * 0.12), 0, 1);
   const recovery = clamp(0.7 * S + 0.3 * T, 0, 1);
+  const recoveryLoadSurplus = clamp(recovery - load, -1, 1);
+  const baselineRecoverySupport = clamp(
+    Math.max(0, recoveryLoadSurplus) * 0.6 + Math.max(0, T - 0.55) * 0.25 + Math.max(0, S - 0.65) * 0.15,
+    0,
+    1
+  );
   const stressN = clamp((input.checkIn.stress - 1) / 9, 0, 1);
   const prevStrainN = clamp(previousBio.strainIndex / 100, 0, 1);
   const fatigueN = clamp(previousBio.cognitiveFatigue / 100, 0, 1);
@@ -197,7 +232,10 @@ export function computeDayV3(input: EngineInput): EngineOutput {
   const nextStressLoad = clamp(
     previousBio.stressLoad * input.config.bio.stressCarry +
       stressN * 100 * input.config.bio.stressGain -
-      recovery * 100 * input.config.bio.stressRecovery,
+      recovery * 100 * input.config.bio.stressRecovery -
+      totalStabilizationIntensity * (6 + recovery * 6) -
+      (reboundPhase1 * 1 + reboundPhase2 * 2 + reboundPhase3 * 3) -
+      sustainedRecoverySignal * (2 + Math.max(0, recoveryLoadSurplus) * 3),
     0,
     100
   );
@@ -269,10 +307,26 @@ export function computeDayV3(input: EngineInput): EngineOutput {
 
   const sleepDeficit = Math.max(0, 1 - S);
   const imbalance = Math.max(0, load - recovery);
-  const debtIncrease = (sleepDeficit * 0.6 + imbalance * 0.4) * 100;
-  const debtRecovery = S * input.config.bio.debtRecoveryFactor;
+  const debtIncrease = (sleepDeficit * 0.6 + imbalance * 0.4) * 100 * (1 - totalStabilizationIntensity * 0.18);
+  const debtCarryRelief = baselineRecoverySupport * 0.06;
+  const debtCarryEffective = clamp(
+    input.config.bio.debtCarry - debtCarryRelief - sustainedRecoverySignal * 0.06,
+    0.76,
+    input.config.bio.debtCarry
+  );
+  const debtRecovery =
+    S *
+    input.config.bio.debtRecoveryFactor *
+    (1 +
+      Math.max(0, recoveryLoadSurplus) * 0.25 +
+      Math.max(0, T - 0.55) * 0.15 +
+      totalStabilizationIntensity * (0.25 + Math.max(0, recoveryLoadSurplus) * 0.2) +
+      reboundPhase1 * 0.08 +
+      reboundPhase2 * 0.14 +
+      reboundPhase3 * 0.2 +
+      sustainedRecoverySignal * 0.28);
   let nextRecoveryDebt = clamp(
-    previousBio.recoveryDebt * input.config.bio.debtCarry + debtIncrease - debtRecovery,
+    previousBio.recoveryDebt * debtCarryEffective + debtIncrease - debtRecovery,
     0,
     100
   );
@@ -287,7 +341,9 @@ export function computeDayV3(input: EngineInput): EngineOutput {
   const fatigueIncrease = baseFatigueIncrease * fatigueMult;
   let fatigueRecovery = input.config.bio.fatigueSleepRecovery * S * 100 * regularityScale;
   fatigueRecovery *= sleepRecoveryMult;
-  fatigueRecovery *= adaptiveScale;
+  const adaptiveRecoverySupport = clamp(baselineRecoverySupport * 0.35 + Math.max(0, recoveryLoadSurplus) * 0.1, 0, 0.4);
+  const effectiveAdaptiveScale = clamp(adaptiveScale + adaptiveRecoverySupport, 0, 1);
+  fatigueRecovery *= effectiveAdaptiveScale;
   if (nextRecoveryDebt > 60) fatigueRecovery *= 0.75;
   if (homeostasisNext > 60) fatigueRecovery = Math.max(0, fatigueRecovery - homeostasisNext * 0.08);
   if (lifeScoreTrend < -3) fatigueRecovery *= 0.9;
@@ -307,7 +363,12 @@ export function computeDayV3(input: EngineInput): EngineOutput {
     0,
     100
   );
-  const strainReduction = sleepBufferSpent * 0.2;
+  const strainReduction =
+    sleepBufferSpent * 0.2 +
+    totalStabilizationIntensity * (4 + Math.max(0, recoveryLoadSurplus) * 6 + Math.max(0, T - 0.5) * 2) +
+    reboundPhase2 * 1.5 +
+    reboundPhase3 * 2.5 +
+    sustainedRecoverySignal * 2;
   const nextStrain = clamp(strainBeforeStabilization - strainReduction, 0, 100);
   const strainN = clamp(nextStrain / 100, 0, 1);
   const loadN = clamp(load, 0, 1);
@@ -322,7 +383,14 @@ export function computeDayV3(input: EngineInput): EngineOutput {
   const overstressInput =
     Math.max(0, effectiveLoad - 0.7) + Math.max(0, stressN - 0.75) + Math.max(0, strainN - 0.6);
   const hormeticNext = clamp(previousBio.hormeticSignal * 0.75 + hormesisInput * 100 * 0.6, 0, 100);
-  const overstressNext = clamp(previousBio.overstressSignal * 0.8 + overstressInput * 100 * 0.7, 0, 100);
+  const overstressNext = clamp(
+    previousBio.overstressSignal * 0.8 +
+      overstressInput * 100 * 0.7 -
+      totalStabilizationIntensity * (3 + Math.max(0, recoveryLoadSurplus) * 4) -
+      sustainedRecoverySignal * (2.5 + Math.max(0, recoveryLoadSurplus) * 3),
+    0,
+    100
+  );
 
   const overloadLevel = resolveOverloadLevel(previousBio.overloadLevel, nextStrain, {
     level1: input.config.bio.overloadLevel1Threshold,
@@ -346,12 +414,40 @@ export function computeDayV3(input: EngineInput): EngineOutput {
   const circadianFocusPenalty = 0.5 * circadianAlignmentPenalty;
   const circadianEnergyPenalty = 0.6 * circadianAlignmentPenalty;
   const saturationFocusPenalty = saturationOver60 * 0.4;
+  const autonomicRecoveryEdge = clamp((paraNext - sympNext) / 100, -1, 1);
+  const circadianRecoveryEdge = clamp((alignmentNext - 55) / 45, -1, 1);
+  const debtReleaseSignal = clamp(
+    baselineRecoverySupport * 0.45 +
+      Math.max(0, autonomicRecoveryEdge) * 0.25 +
+      Math.max(0, circadianRecoveryEdge) * 0.15 +
+      Math.max(0, 0.65 - stressN) * 0.15,
+    0,
+    1
+  );
+  const debtReleaseMagnitude =
+    previousBio.recoveryDebt >= 75
+      ? 8 + sustainedRecoverySignal * 3
+      : previousBio.recoveryDebt >= 55
+        ? 5 + sustainedRecoverySignal * 2.4
+        : previousBio.recoveryDebt >= 35
+          ? 3 + sustainedRecoverySignal * 1.6
+          : 1.5 + sustainedRecoverySignal;
+  const debtRelease = debtReleaseSignal * debtReleaseMagnitude;
 
   const sympFocusBoost = sympNext > 70 && fatigueN < 0.6 ? (sympNext - 70) * 0.15 : 0;
   if (sympFocusBoost > 0) {
-    nextRecoveryDebt = clamp(nextRecoveryDebt + (sympNext - 70) * 0.1, 0, 100);
+    const sympatheticDebtPenalty = (sympNext - 70) * 0.1 * (1 - Math.max(0, recoveryLoadSurplus) * 0.35);
+    nextRecoveryDebt = clamp(nextRecoveryDebt + sympatheticDebtPenalty, 0, 100);
   }
-  nextRecoveryDebt = clamp(nextRecoveryDebt + overstressNext * 0.05 - hormeticNext * 0.03, 0, 100);
+  nextRecoveryDebt = clamp(
+    nextRecoveryDebt +
+      overstressNext * 0.05 -
+      hormeticNext * 0.03 -
+      debtRelease -
+      sustainedRecoverySignal * (previousBio.recoveryDebt >= 70 ? 4.5 : previousBio.recoveryDebt >= 50 ? 2.8 : 1.2),
+    0,
+    100
+  );
 
   const sympN = clamp(sympNext / 100, 0, 1);
   const paraN = clamp(paraNext / 100, 0, 1);
@@ -371,8 +467,31 @@ export function computeDayV3(input: EngineInput): EngineOutput {
     0.1 * overstressN -
     0.1 * hormesisN -
     0.14 * paraN;
+  const burnoutRecoverySignal = clamp(
+    baselineRecoverySupport * 0.45 +
+      Math.max(0, autonomicRecoveryEdge) * 0.2 +
+      Math.max(0, circadianRecoveryEdge) * 0.15 +
+      Math.max(0, previousBio.resilienceIndex / 100 - 0.45) * 0.2,
+    0,
+    1
+  );
+  const burnoutRecoveryBrake =
+    burnoutRecoverySignal *
+    (previousBio.burnoutRiskIndex >= 80 ? 8 : previousBio.burnoutRiskIndex >= 60 ? 5 : previousBio.burnoutRiskIndex >= 40 ? 3 : 1.5);
+  const burnoutStabilizationRelief =
+    totalStabilizationIntensity * (4 + recoveryN * 6 + Math.max(0, 1 - stressN) * 2) +
+    reboundPhase2 * 2 +
+    reboundPhase3 * 3 +
+    sustainedRecoverySignal * 3.5;
+  const burnoutCarry =
+    previousBio.burnoutRiskIndex *
+    clamp(0.85 - sustainedRecoverySignal * 0.07 - reboundPhase3 * 0.03, 0.72, 0.86);
   const burnoutNext = clamp(
-    previousBio.burnoutRiskIndex * 0.85 + burnoutPressure * 100 * 0.35 - previousBio.resilienceIndex * 0.12,
+    burnoutCarry +
+      burnoutPressure * 100 * 0.35 -
+      previousBio.resilienceIndex * 0.12 -
+      burnoutRecoveryBrake -
+      burnoutStabilizationRelief,
     0,
     100
   );
@@ -383,8 +502,36 @@ export function computeDayV3(input: EngineInput): EngineOutput {
     0.2 * (1 - recoveryDebtN) +
     0.15 * clamp(alignmentNext / 100, 0, 1) +
     0.1 * hormesisN;
+  const resilienceRecoverySignal = clamp(
+    baselineRecoverySupport * 0.45 +
+      Math.max(0, autonomicRecoveryEdge) * 0.25 +
+      Math.max(0, circadianRecoveryEdge) * 0.15 +
+      Math.max(0, 1 - recoveryDebtN - 0.25) * 0.15,
+    0,
+    1
+  );
+  const resilienceRecoveryBoost =
+    resilienceRecoverySignal *
+    (previousBio.resilienceIndex <= 25
+      ? 7
+      : previousBio.resilienceIndex <= 45
+        ? 4.5
+        : previousBio.resilienceIndex <= 65
+          ? 2.5
+          : 1.2);
+  const overstressResiliencePenaltyScale = previousBio.resilienceIndex <= 20 ? 0.8 : previousBio.resilienceIndex <= 35 ? 0.9 : 1;
+  const resilienceStabilizationBonus =
+    totalStabilizationIntensity * (3 + recoveryN * 4 + Math.max(0, T - 0.55) * 2 + Math.max(0, recoveryLoadSurplus) * 3) +
+    reboundPhase1 * 1 +
+    reboundPhase2 * 2 +
+    reboundPhase3 * 3 +
+    sustainedRecoverySignal * 2;
   const resilienceNext = clamp(
-    previousBio.resilienceIndex * 0.88 + resilienceGain * 100 * 0.25 - overstressN * 100 * 0.1,
+    previousBio.resilienceIndex * 0.88 +
+      resilienceGain * 100 * 0.25 -
+      overstressN * 100 * 0.1 * overstressResiliencePenaltyScale +
+      resilienceRecoveryBoost +
+      resilienceStabilizationBonus,
     0,
     100
   );
@@ -438,7 +585,10 @@ export function computeDayV3(input: EngineInput): EngineOutput {
     inOptimalWindow && overloadLevel === 0
       ? input.config.bio.adaptGain * 10
       : overloadLevel >= 1
-        ? -input.config.bio.burnoutPenalty * 15
+        ? -input.config.bio.burnoutPenalty *
+          15 *
+          (previousBio.adaptiveCapacity < 20 ? 0.75 : previousBio.adaptiveCapacity < 35 ? 0.85 : 1) *
+          (1 - totalStabilizationIntensity * 0.45)
         : 0;
   let nextAdaptiveCapacity = clamp(
     previousBio.adaptiveCapacity * input.config.bio.adaptiveCarry + adaptiveDelta,
@@ -448,6 +598,29 @@ export function computeDayV3(input: EngineInput): EngineOutput {
   if (homeostasisNext > 60) nextAdaptiveCapacity = clamp(nextAdaptiveCapacity - homeostasisNext * 0.05, 0, 100);
   if (homeostasisNext < 25 && loadRecoveryGapAbs <= 0.1) nextAdaptiveCapacity = clamp(nextAdaptiveCapacity + 2, 0, 100);
   nextAdaptiveCapacity = clamp(nextAdaptiveCapacity + hormeticNext * 0.06 - overstressNext * 0.08, 0, 100);
+  const adaptiveRecoverySignal = clamp(
+    baselineRecoverySupport * 0.45 +
+      Math.max(0, autonomicRecoveryEdge) * 0.2 +
+      Math.max(0, circadianRecoveryEdge) * 0.15 +
+      Math.max(0, 0.7 - stressN) * 0.2,
+    0,
+    1
+  );
+  const adaptiveRecoveryBoost =
+    adaptiveRecoverySignal *
+    (previousBio.adaptiveCapacity <= 20
+      ? 6
+      : previousBio.adaptiveCapacity <= 40
+        ? 4
+        : previousBio.adaptiveCapacity <= 60
+          ? 2.5
+          : 1.2);
+  const adaptiveStabilizationBoost =
+    totalStabilizationIntensity * (2 + Math.max(0, recoveryLoadSurplus) * 5 + Math.max(0, T - 0.55) * 2) +
+    reboundPhase2 * 1.5 +
+    reboundPhase3 * 2.5 +
+    sustainedRecoverySignal * 2.2;
+  nextAdaptiveCapacity = clamp(nextAdaptiveCapacity + adaptiveRecoveryBoost + adaptiveStabilizationBoost, 0, 100);
   const nextAdaptiveCapacityStabilized =
     sleepBufferSpent > 0 && overloadLevel === 0 ? clamp(nextAdaptiveCapacity + sleepBufferSpent * 0.05, 0, 100) : nextAdaptiveCapacity;
   let nextAdaptiveCapacityDelayed = clamp(nextAdaptiveCapacityStabilized + trainingAdaptiveBonus, 0, 100);
@@ -635,6 +808,11 @@ export function computeDayV3(input: EngineInput): EngineOutput {
   if (resilienceNext >= 70) risk -= 8;
   if (lifeScoreTrend > 3) risk -= 5;
   if (lifeScoreTrend < -3) risk += 6;
+  risk -=
+    totalStabilizationIntensity * (6 + Math.max(0, recoverySurplus) * 10) +
+    reboundPhase2 * 2 +
+    reboundPhase3 * 3 +
+    sustainedRecoverySignal * (3 + Math.max(0, recoverySurplus) * 4);
   risk = clamp(risk, 0, 100);
 
   const autonomicFatigueEffect = fatigueIncrease - baseFatigueIncrease;
