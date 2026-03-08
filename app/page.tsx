@@ -3,10 +3,8 @@ import { auth, signOut } from "@/auth";
 import { LandingAuthOverlayController } from "@/components/auth/LandingAuthOverlayController";
 import { LandingBottomCtas } from "@/components/landing/LandingBottomCtas";
 import { SmoothScrollButton } from "@/components/landing/SmoothScrollButton";
-import { SystemPreviewCard } from "@/components/landing/SystemPreviewCard";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { PublicFooter } from "@/components/public/PublicFooter";
-import { PublicNavLinks } from "@/components/public/PublicNavLinks";
 import { t } from "@/lib/i18n";
 
 export default async function LandingPage() {
@@ -26,7 +24,6 @@ export default async function LandingPage() {
         <header className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs uppercase tracking-[0.24em] text-zinc-400">LIFE OS</p>
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <PublicNavLinks className="flex flex-wrap items-center gap-2" />
             {session ? (
               <>
                 <Link
@@ -60,7 +57,7 @@ export default async function LandingPage() {
           </div>
         </header>
 
-        <section className="mt-16 grid gap-8 lg:mt-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+        <section className="mt-16 lg:mt-20">
           <div>
             <p className="text-xs uppercase tracking-[0.28em] text-zinc-500">Operational Interface</p>
             <h1 className="mt-4 text-4xl font-semibold leading-tight sm:text-5xl">
@@ -110,18 +107,6 @@ export default async function LandingPage() {
               >
                 {t("ctaEnterControlRoom")}
               </Link>
-              <Link
-                href="/demo"
-                className="min-h-10 rounded-md border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition duration-200 hover:border-zinc-500"
-              >
-                {t("ctaViewGuidedDemo")}
-              </Link>
-              <Link
-                href="/demo/live"
-                className="min-h-10 rounded-md border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm text-cyan-100 transition duration-200 hover:border-cyan-300"
-              >
-                Open simulation view
-              </Link>
               <SmoothScrollButton
                 targetId="how-it-works"
                 headingId="how-it-works-heading"
@@ -131,7 +116,6 @@ export default async function LandingPage() {
               </SmoothScrollButton>
             </div>
           </div>
-          <SystemPreviewCard />
         </section>
 
         <div aria-hidden="true" className="mt-12 h-px w-full bg-zinc-800/50" />
@@ -217,61 +201,50 @@ export default async function LandingPage() {
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-sm text-zinc-400">
-            Guardrail system
-            <br />
-            OPEN &rarr; CAUTION &rarr; LOCKDOWN
-            <br />
-            State transitions occur when overload probability exceeds thresholds.
-            <br />
-            Constraints override intention.
-            <br />
-            <br />
-            Example scenario
-            <br />
-            Example: Founder working 11-12h/day for 3 weeks
-            <br />
-            &rarr; Recovery capacity declines
-            <br />
-            &rarr; Overload probability increases
-            <br />
-            &rarr; Guardrail shifts to CAUTION
-            <br />
-            &rarr; Stabilization protocol activates
-            <br />
-            &rarr; Load is reduced
-            <br />
-            &rarr; System returns to baseline
-            <br />
-            <br />
-            LIFE OS forecasts system stability - not productivity.
-            <br />
-            <br />
-            This is not about doing more.
-            <br />
-            It is about preventing systemic failure.
-            <br />
-            <br />
-            This is about preserving operational integrity.
-          </p>
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            <article className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4 transition duration-200 hover:border-zinc-700">
+              <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">Guardrail system</p>
+              <p className="mt-2 text-sm font-medium text-zinc-100">OPEN &rarr; CAUTION &rarr; LOCKDOWN</p>
+              <p className="mt-2 text-sm text-zinc-400">
+                State transitions occur when overload probability crosses thresholds. Constraints override intention.
+              </p>
+            </article>
+            <article className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4 transition duration-200 hover:border-zinc-700">
+              <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">Example scenario</p>
+              <p className="mt-2 text-sm text-zinc-300">Founder operating 11-12h/day for 3 weeks:</p>
+              <ul className="mt-2 space-y-1 text-sm text-zinc-400">
+                <li>&rarr; Recovery capacity declines</li>
+                <li>&rarr; Overload probability increases</li>
+                <li>&rarr; Guardrail shifts to CAUTION</li>
+                <li>&rarr; Stabilization protocol activates</li>
+                <li>&rarr; Load is reduced and baseline is restored</li>
+              </ul>
+            </article>
+            <article className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4 transition duration-200 hover:border-zinc-700">
+              <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">What LIFE OS does</p>
+              <p className="mt-2 text-sm text-zinc-300">LIFE OS forecasts system stability, not productivity.</p>
+              <p className="mt-2 text-sm text-zinc-400">This is not about doing more. It is about preventing systemic failure.</p>
+              <p className="mt-2 text-sm font-medium text-zinc-100">The objective is preserving operational integrity.</p>
+            </article>
+          </div>
         </section>
 
         <section className="mt-20">
           <h2 className="text-xl font-semibold text-zinc-100">Designed for high-load environments</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <article className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
+            <article className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-5 transition duration-200 hover:border-zinc-700">
               <h3 className="text-sm font-semibold text-zinc-100">Knowledge Workers</h3>
               <p className="mt-1 text-sm text-zinc-400">Protect deep work under cognitive strain.</p>
             </article>
-            <article className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
+            <article className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-5 transition duration-200 hover:border-zinc-700">
               <h3 className="text-sm font-semibold text-zinc-100">Athletes & Lifters</h3>
               <p className="mt-1 text-sm text-zinc-400">Balance training stress against recovery reserve.</p>
             </article>
-            <article className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
+            <article className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-5 transition duration-200 hover:border-zinc-700">
               <h3 className="text-sm font-semibold text-zinc-100">Founders & Operators</h3>
               <p className="mt-1 text-sm text-zinc-400">Scale effort without crossing overload thresholds.</p>
             </article>
-            <article className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
+            <article className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-5 transition duration-200 hover:border-zinc-700">
               <h3 className="text-sm font-semibold text-zinc-100">Neurodivergent Users</h3>
               <p className="mt-1 text-sm text-zinc-400">Externalize regulation signals into visible system states.</p>
             </article>

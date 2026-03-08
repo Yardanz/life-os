@@ -1,64 +1,76 @@
 import Link from "next/link";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { PublicFooter } from "@/components/public/PublicFooter";
-import { PageHeader } from "@/components/public/PageHeader";
+import { BackNavButton } from "@/components/ui/BackNavButton";
 import { SYSTEM_VERSION } from "@/lib/version";
 
 const RELEASE_CHANGES = [
-  "System Status authority layer with guardrail and authority classification.",
-  "Operational enforcement flow: Required Actions, Protocol activation, Constraint Trace.",
-  "Deterministic Explain State, Model Transparency, and Integrity-first diagnostics.",
-  "Interactive public system preview with controlled deterministic scenario walkthrough.",
-  "Snapshot links with revocation/expiry controls and strict payload sanitization.",
+  "Control Room now uses a unified daily check-in status model (operational date, create/edit mode, and next check-in window).",
+  "System Evolution progression is explicit: Day 3 trajectory, Day 5 partial diagnostics, Day 7 full diagnostics, then onboarding strip removal on Day 8+.",
+  "Onboarding now includes a multi-step tutorial flow shown on first entry and after reset, with controlled reopen access during Day 1-7.",
+  "Diagnostics depth is split by entitlement: Observer depth remains available, Operator License unlocks full model analysis and deeper operator layers.",
+  "Operator planning layer includes advanced trajectory (30-day + 72h envelope), intervention simulation, scenario compare/library, and Anti-Chaos controls.",
 ];
 
-const KNOWN_CONSTRAINTS = [
-  "Model authority is limited during calibration (before baseline stabilizes).",
-  "Forward simulation layers require sufficient baseline data and capability access.",
-  "Snapshot links are read-only and expire automatically by policy.",
-  "Read-only simulation sessions do not permit write operations.",
+const OPERATIONAL_NOTES = [
+  "Calibration authority remains limited until baseline confidence stabilizes (first 7 completed check-ins).",
+  "Only one check-in is accepted per operational day; existing daily entries reopen in edit mode.",
+  "System Evolution and its tutorial entry point exist only during onboarding (Day 1-7).",
+  "Advanced trajectory, Anti-Chaos, scenario tools, and full operator-depth diagnostics require Operator License.",
+  "Read-only simulation accounts, when enabled, do not permit write operations (check-ins, reset, or scenario writes).",
 ];
 
 export default function ReleasePage() {
   return (
     <LifeOSBackground>
-      <main id="main-content" className="mx-auto min-h-screen w-full max-w-6xl overflow-x-hidden px-4 py-10 text-zinc-100 sm:px-6 sm:py-12">
-        <PageHeader
-          kicker="SYSTEM RELEASE"
-          title="Release Package"
-        />
+      <main id="main-content" className="mx-auto min-h-screen w-full max-w-5xl overflow-x-hidden px-4 py-10 text-zinc-100 sm:px-6 sm:py-12">
+        <header className="mb-8 sm:mb-10">
+          <BackNavButton className="inline-flex items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40" />
+          <div className="mt-4 space-y-2">
+            <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">SYSTEM RELEASE</p>
+            <h1 className="text-3xl font-semibold text-zinc-100 sm:text-4xl">Release Package</h1>
+            <p className="max-w-3xl text-sm leading-relaxed text-zinc-400">
+              Public system release document for the current LIFE OS architecture and capability access model.
+            </p>
+          </div>
+        </header>
 
-        <section className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
-          <h2 className="text-sm font-medium text-zinc-100">Version</h2>
-          <p className="mt-2 text-sm text-zinc-300">System v{SYSTEM_VERSION}</p>
-          <p className="mt-1 text-xs text-zinc-500">Release Candidate build. Operational verification in progress.</p>
-        </section>
-
-        <section className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
-          <h2 className="text-sm font-medium text-zinc-100">Changes</h2>
-          <ul className="mt-2 space-y-1 text-sm text-zinc-300">
-            {RELEASE_CHANGES.map((item) => (
-              <li key={item}>- {item}</li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
-          <h2 className="text-sm font-medium text-zinc-100">Known constraints</h2>
-          <ul className="mt-2 space-y-1 text-sm text-zinc-300">
-            {KNOWN_CONSTRAINTS.map((item) => (
-              <li key={item}>- {item}</li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
-          <h2 className="text-sm font-medium text-zinc-100">Data handling summary</h2>
-          <p className="mt-2 text-sm text-zinc-300">
-            LIFE OS stores user check-ins and deterministic system outputs required for operation. Public preview and snapshot
-            modes are read-only and do not expose personal identifiers.
+        <section className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Version</p>
+          <h2 className="mt-2 text-sm font-semibold text-zinc-100">System v{SYSTEM_VERSION}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-300">
+            Current public release track. This package reflects active Control Room behavior, onboarding progression, and Operator License gating.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+        </section>
+
+        <section className="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Changes</p>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-zinc-300">
+            {RELEASE_CHANGES.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Operational Notes</p>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-zinc-300">
+            {OPERATIONAL_NOTES.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Data Handling</p>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+            LIFE OS stores check-ins, deterministic system outputs, and operational state needed for control-room continuity (for example:
+            progression status, diagnostics state, and trajectory/protocol artifacts when those capabilities are used).
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+            Stored data is used for deterministic computation and account continuity. Legal and privacy policy details are defined in the documents below.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2 text-xs">
             <Link
               href="/privacy"
               className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-zinc-200 transition hover:border-zinc-500"
@@ -74,7 +86,7 @@ export default function ReleasePage() {
           </div>
         </section>
 
-        <PublicFooter className="mt-8" />
+        <PublicFooter className="mt-10" />
       </main>
     </LifeOSBackground>
   );
