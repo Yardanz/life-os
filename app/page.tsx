@@ -17,6 +17,13 @@ export default async function LandingPage() {
   };
   const controlRoomAuthHref = buildAuthOverlayHref("/app/live");
   const primaryHref = session ? "/app/live" : controlRoomAuthHref;
+  const comparisonRows = [
+    { title: "Behavior tracking", habit: "Track behavior", lifeOs: "Model load dynamics" },
+    { title: "Reward model", habit: "Reward streaks", lifeOs: "Enforce capacity limits" },
+    { title: "Control logic", habit: "Motivation loops", lifeOs: "Risk-based state control" },
+    { title: "Signal type", habit: "Subjective reflection", lifeOs: "Measurable system signals" },
+    { title: "Operating objective", habit: "Goal chasing", lifeOs: "Stability preservation" },
+  ] as const;
 
   return (
     <LifeOSBackground>
@@ -169,8 +176,25 @@ export default async function LandingPage() {
             <br />
             LIFE OS prevents system collapse.
           </h2>
-          <div className="mt-4 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/70">
-            <table className="w-full min-w-[560px] text-left text-xs sm:min-w-[640px] sm:text-sm">
+          <div className="mt-4 space-y-2 sm:hidden">
+            {comparisonRows.map((row) => (
+              <article key={row.title} className="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3.5 py-3">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">{row.title}</p>
+                <div className="mt-2 space-y-1.5 text-sm">
+                  <p className="text-zinc-300">
+                    <span className="text-zinc-500">Habit Apps — </span>
+                    {row.habit}
+                  </p>
+                  <p className="text-zinc-100">
+                    <span className="text-zinc-500">LIFE OS — </span>
+                    {row.lifeOs}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="mt-4 hidden overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/70 sm:block">
+            <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="border-b border-zinc-800 bg-zinc-950/60 text-zinc-300">
                 <tr>
                   <th className="px-4 py-3 font-medium">Habit Apps</th>
@@ -178,26 +202,15 @@ export default async function LandingPage() {
                 </tr>
               </thead>
               <tbody className="text-zinc-400">
-                <tr className="border-b border-zinc-800/80 transition-colors duration-200 hover:bg-zinc-800/20">
-                  <td className="px-4 py-3">Track behavior</td>
-                  <td className="px-4 py-3">Model load dynamics</td>
-                </tr>
-                <tr className="border-b border-zinc-800/80 transition-colors duration-200 hover:bg-zinc-800/20">
-                  <td className="px-4 py-3">Reward streaks</td>
-                  <td className="px-4 py-3">Enforce capacity limits</td>
-                </tr>
-                <tr className="border-b border-zinc-800/80 transition-colors duration-200 hover:bg-zinc-800/20">
-                  <td className="px-4 py-3">Motivation loops</td>
-                  <td className="px-4 py-3">Risk-based state control</td>
-                </tr>
-                <tr className="border-b border-zinc-800/80 transition-colors duration-200 hover:bg-zinc-800/20">
-                  <td className="px-4 py-3">Subjective reflection</td>
-                  <td className="px-4 py-3">Measurable system signals</td>
-                </tr>
-                <tr className="transition-colors duration-200 hover:bg-zinc-800/20">
-                  <td className="px-4 py-3">Goal chasing</td>
-                  <td className="px-4 py-3">Stability preservation</td>
-                </tr>
+                {comparisonRows.map((row, index) => (
+                  <tr
+                    key={`${row.habit}-${row.lifeOs}`}
+                    className={`${index < comparisonRows.length - 1 ? "border-b border-zinc-800/80" : ""} transition-colors duration-200 hover:bg-zinc-800/20`}
+                  >
+                    <td className="px-4 py-3">{row.habit}</td>
+                    <td className="px-4 py-3">{row.lifeOs}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

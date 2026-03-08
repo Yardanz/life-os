@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { prepareBackNavigationScrollReset } from "@/lib/navigation/backScrollReset";
 
 type BackNavButtonProps = {
   fallbackHref?: string;
@@ -17,6 +18,7 @@ export function BackNavButton({ fallbackHref = "/", className }: BackNavButtonPr
     }
 
     if (window.history.length > 1) {
+      prepareBackNavigationScrollReset();
       router.back();
       return;
     }

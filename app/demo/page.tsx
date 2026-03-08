@@ -203,7 +203,7 @@ export default function DemoPage() {
         </header>
 
         <section className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-3">
-          <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1">
+          <div className="flex flex-wrap items-center gap-2">
             {(["baseline", "high_load", "recovery"] as ScenarioKey[]).map((key) => (
               <button
                 key={key}

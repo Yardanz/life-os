@@ -249,8 +249,12 @@ export function ProjectionChartContainer({
 
   return (
     <>
-      <div className="mb-3 flex items-center justify-between">
-        <div className="inline-flex rounded-md border border-zinc-700 bg-zinc-950/80 p-0.5 text-[11px]">
+      <div className="mb-3 rounded-md border border-zinc-800/80 bg-zinc-950/45 p-2.5">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] uppercase tracking-[0.12em] text-zinc-500">Metric selection</p>
+          <span className="text-xs text-zinc-500">{customLoading ? t("computingCustom", locale) : t("deterministicModel", locale)}</span>
+        </div>
+        <div className="inline-flex rounded-md border border-zinc-700 bg-zinc-950/80 p-0.5 text-xs">
           <button
             type="button"
             onClick={() => setMetric("lifeScore")}
@@ -279,7 +283,6 @@ export function ProjectionChartContainer({
             Burnout
           </button>
         </div>
-        <span className="text-xs text-zinc-500">{customLoading ? t("computingCustom", locale) : t("deterministicModel", locale)}</span>
       </div>
 
       <ProjectionChartView
@@ -292,7 +295,7 @@ export function ProjectionChartContainer({
         matchTrajectoryStyle={matchTrajectoryStyle}
       />
 
-      <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/75 px-3 py-2 font-mono text-[11px] tabular-nums">
+      <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/75 px-3 py-2 font-mono text-xs sm:text-[11px] tabular-nums">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="text-zinc-500">{metricLabel(metric, locale)} @30d</span>
           <span className="text-cyan-200">BASE {strip.base !== null ? strip.base.toFixed(1) : "-"}</span>
@@ -325,7 +328,7 @@ export function ProjectionChartContainer({
       </div>
 
       <details className="mt-2 rounded-md border border-zinc-800/70 bg-zinc-950/50 px-3 py-2">
-        <summary className="cursor-pointer text-[11px] text-zinc-500">{t("details", locale)}</summary>
+        <summary className="cursor-pointer text-xs text-zinc-500 sm:text-[11px]">{t("details", locale)}</summary>
         {isPro ? (
           <div className="mt-2 grid gap-2 md:grid-cols-3">
             {summaryChip(t("baseline", locale), unified.baseline, "cyan", locale)}

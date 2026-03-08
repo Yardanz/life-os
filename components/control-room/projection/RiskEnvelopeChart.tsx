@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useIsCompactViewport } from "@/hooks/useIsCompactViewport";
 
 const SAFE_THRESHOLD = 65;
 const CAUTION_THRESHOLD = 80;
@@ -39,12 +40,37 @@ type EnvelopeTooltipProps = {
   active?: boolean;
   payload?: TooltipPayloadValue[];
   showOverload?: boolean;
+  compact?: boolean;
 };
 
-function EnvelopeTooltip({ active, payload, showOverload = true }: EnvelopeTooltipProps) {
+function EnvelopeTooltip({ active, payload, showOverload = true, compact = false }: EnvelopeTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
   const row = payload[0]?.payload;
   if (!row) return null;
+
+  if (compact) {
+    return (
+      <div className="w-[min(10.5rem,calc(100vw-1rem))] rounded-md border border-zinc-700/80 bg-zinc-950/95 px-2 py-1.5 text-[11px] shadow-lg shadow-black/40">
+        <p className="text-zinc-100">{row.tLabel}</p>
+        <div className="mt-1 space-y-1 font-mono tabular-nums">
+          <div className="flex items-center justify-between gap-2 text-cyan-200">
+            <span>BASE</span>
+            <span>{row.riskBaseline.toFixed(1)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2 text-emerald-200">
+            <span>STB</span>
+            <span>{row.riskStabilize.toFixed(1)}</span>
+          </div>
+          {showOverload ? (
+            <div className="flex items-center justify-between gap-2 text-rose-200">
+              <span>OVR</span>
+              <span>{row.riskOverload.toFixed(1)}</span>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-[min(14rem,calc(100vw-2.5rem))] rounded-md border border-zinc-700/80 bg-zinc-950/95 px-2.5 py-2 text-xs shadow-lg shadow-black/40 sm:px-3">
@@ -75,6 +101,7 @@ export function RiskEnvelopeChart({
   safeWindowHours = null,
   guardrailLevel = 0,
 }: RiskEnvelopeChartProps) {
+  const isCompact = useIsCompactViewport();
   const chartData: ChartPoint[] = points.map((point, idx) => ({ ...point, idx }));
   const safeWindowX =
     typeof safeWindowHours === "number" && Number.isFinite(safeWindowHours)
@@ -82,11 +109,14 @@ export function RiskEnvelopeChart({
       : null;
   const budgetLabel = guardrailLevel === 2 ? "Budget window (LOCKDOWN)" : "Budget window";
   const budgetStroke = guardrailLevel === 2 ? "#fb7185" : "#22d3ee";
+  const xTicks = isCompact ? [0, 2, 3] : [0, 1, 2, 3];
+  const yTicks = isCompact ? [0, 40, 65, 80, 100] : [0, 20, 40, 60, 80, 100];
+  const axisFontSize = isCompact ? 12 : 11;
 
   return (
-    <div className="h-64 w-full rounded-lg border border-zinc-800 bg-zinc-950/70 p-2">
+    <div className={`${isCompact ? "h-[17.5rem]" : "h-64"} w-full rounded-lg border border-zinc-800 bg-zinc-950/70 p-2`}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 14, right: 16, bottom: 20, left: 6 }}>
+        <LineChart data={chartData} margin={isCompact ? { top: 12, right: 10, bottom: 24, left: 6 } : { top: 14, right: 16, bottom: 20, left: 6 }}>
           <ReferenceArea
             x1={-0.5}
             x2={3.5}
@@ -122,7 +152,7 @@ export function RiskEnvelopeChart({
             strokeOpacity={0.55}
             strokeDasharray="4 4"
             ifOverflow="extendDomain"
-            label={{ value: "Caution 65", fill: "#fbbf24", fontSize: 10, position: "insideTopRight" }}
+            label={!isCompact ? { value: "Caution 65", fill: "#fbbf24", fontSize: 10, position: "insideTopRight" } : undefined}
           />
           <ReferenceLine
             y={CAUTION_THRESHOLD}
@@ -130,7 +160,7 @@ export function RiskEnvelopeChart({
             strokeOpacity={0.55}
             strokeDasharray="4 4"
             ifOverflow="extendDomain"
-            label={{ value: "Critical 80", fill: "#fca5a5", fontSize: 10, position: "insideTopRight" }}
+            label={!isCompact ? { value: "Critical 80", fill: "#fca5a5", fontSize: 10, position: "insideTopRight" } : undefined}
           />
           {safeWindowX !== null ? (
             <ReferenceLine
@@ -139,31 +169,32 @@ export function RiskEnvelopeChart({
               strokeWidth={1.4}
               strokeDasharray="5 4"
               ifOverflow="extendDomain"
-              label={{ value: budgetLabel, fill: "#e4e4e7", fontSize: 10, position: "top" }}
+              label={!isCompact ? { value: budgetLabel, fill: "#e4e4e7", fontSize: 10, position: "top" } : undefined}
             />
           ) : null}
           <XAxis
             type="number"
             dataKey="idx"
             domain={[-0.5, 3.5]}
-            ticks={[0, 1, 2, 3]}
+            ticks={xTicks}
             tickFormatter={(value: number) => chartData[value]?.tLabel ?? ""}
             axisLine={{ stroke: "#52525b", opacity: 0.35 }}
             tickLine={false}
-            tick={{ fill: "#71717a", fontSize: 11 }}
+            tick={{ fill: "#71717a", fontSize: axisFontSize }}
+            minTickGap={isCompact ? 24 : 12}
           />
           <YAxis
             type="number"
             domain={[0, 100]}
-            ticks={[0, 20, 40, 60, 80, 100]}
+            ticks={yTicks}
             axisLine={{ stroke: "#52525b", opacity: 0.35 }}
             tickLine={false}
-            tick={{ fill: "#71717a", fontSize: 11 }}
-            width={34}
+            tick={{ fill: "#71717a", fontSize: axisFontSize }}
+            width={isCompact ? 40 : 34}
           />
           <Tooltip
             cursor={{ stroke: "#71717a", strokeOpacity: 0.4, strokeDasharray: "3 3" }}
-            content={<EnvelopeTooltip showOverload={showOverload} />}
+            content={<EnvelopeTooltip showOverload={showOverload} compact={isCompact} />}
           />
 
           <Line type="monotone" dataKey="riskStabilize" stroke="#34d399" strokeWidth={1.6} dot={false} isAnimationActive={false} />

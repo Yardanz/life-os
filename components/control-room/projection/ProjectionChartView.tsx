@@ -16,6 +16,7 @@ import { ProjectionChartTooltip } from "@/components/control-room/projection/Pro
 import { formatDayTick } from "@/components/control-room/projection/format";
 import type { EndLabel, MetricKey, ProjectionChartRow, ScenarioKey } from "@/components/control-room/projection/types";
 import { METRIC_ZONES, X_TICKS, Y_TICKS } from "@/components/control-room/projection/zones";
+import { useIsCompactViewport } from "@/hooks/useIsCompactViewport";
 
 type ProjectionChartViewProps = {
   metric: MetricKey;
@@ -38,6 +39,18 @@ const STROKE_MAP: Record<ScenarioKey, string> = {
 
 const DOTLESS_LINE = { strokeWidth: 2.3, dot: false, isAnimationActive: false } as const;
 
+function buildTicks(min: number, max: number, count: number): number[] {
+  if (!Number.isFinite(min) || !Number.isFinite(max) || count <= 1) {
+    return [Math.round(min * 10) / 10];
+  }
+  const normalizedCount = Math.max(2, count);
+  return Array.from({ length: normalizedCount }, (_, index) => {
+    const ratio = index / (normalizedCount - 1);
+    const value = min + (max - min) * ratio;
+    return Math.round(value * 10) / 10;
+  });
+}
+
 export function ProjectionChartView({
   metric,
   rows,
@@ -47,6 +60,7 @@ export function ProjectionChartView({
   impactHorizonDays = null,
   matchTrajectoryStyle = false,
 }: ProjectionChartViewProps) {
+  const isCompact = useIsCompactViewport();
   const minMax = (() => {
     const values = rows.flatMap((row) =>
       visibleScenarios
@@ -62,26 +76,28 @@ export function ProjectionChartView({
   const dynamicMax = Math.min(100, Math.ceil((minMax.max + 10) / 5) * 5);
   const yMin = dynamicMax <= dynamicMin ? Math.max(0, dynamicMin - 20) : dynamicMin;
   const yMax = dynamicMax <= dynamicMin ? Math.min(100, dynamicMax + 20) : dynamicMax;
-  const yTicksDynamic = Array.from({ length: 5 }, (_, index) => {
-    const ratio = index / 4;
-    const value = yMin + (yMax - yMin) * ratio;
-    return Math.round(value * 10) / 10;
-  });
+  const yTicksDynamic = buildTicks(yMin, yMax, isCompact ? 4 : 5);
+  const xTicks = isCompact ? [0, 10, 20, 29] : X_TICKS;
+  const yTicks = matchTrajectoryStyle ? yTicksDynamic : isCompact ? [0, 40, 80, 100] : Y_TICKS;
+  const axisFontSize = isCompact ? 12 : 11;
+  const chartHeightClass = isCompact ? "h-[18.5rem]" : "h-64";
+  const chartMargin = matchTrajectoryStyle
+    ? isCompact
+      ? { top: 14, right: 8, bottom: 36, left: 8 }
+      : { top: 20, right: 24, bottom: 52, left: 24 }
+    : isCompact
+      ? { top: 12, right: 12, bottom: 24, left: 6 }
+      : { top: 14, right: 106, bottom: 20, left: 6 };
+  const yAxisWidth = matchTrajectoryStyle ? (isCompact ? 42 : 52) : isCompact ? 38 : 34;
+  const showEndLabels = !isCompact;
 
   const zones = METRIC_ZONES[metric];
   const zoneBoundaries = zones.slice(1).map((zone) => zone.from);
 
   return (
-    <div className={`h-64 w-full rounded-lg border border-zinc-800 bg-zinc-950/70 ${matchTrajectoryStyle ? "p-3" : "p-2"}`}>
+    <div className={`${chartHeightClass} w-full rounded-lg border border-zinc-800 bg-zinc-950/70 ${matchTrajectoryStyle ? "p-3" : "p-2"}`}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={rows}
-          margin={
-            matchTrajectoryStyle
-              ? { top: 20, right: 24, bottom: 52, left: 24 }
-              : { top: 14, right: 106, bottom: 20, left: 6 }
-          }
-        >
+        <LineChart data={rows} margin={chartMargin}>
           {!matchTrajectoryStyle && impactHorizonDays ? (
             <ReferenceArea
               x1={0}
@@ -130,37 +146,38 @@ export function ProjectionChartView({
             type="number"
             dataKey="dayIndex"
             domain={[-0.5, 29.5]}
-            ticks={X_TICKS}
+            ticks={xTicks}
             tickFormatter={formatDayTick}
             axisLine={{ stroke: "#52525b", opacity: 0.35 }}
             tickLine={false}
-            tick={{ fill: "#71717a", fontSize: 11 }}
-            tickMargin={matchTrajectoryStyle ? 14 : 8}
+            tick={{ fill: "#71717a", fontSize: axisFontSize }}
+            tickMargin={matchTrajectoryStyle ? (isCompact ? 10 : 14) : isCompact ? 10 : 8}
+            minTickGap={isCompact ? 22 : 12}
           />
           <YAxis
             type="number"
             domain={matchTrajectoryStyle ? [yMin, yMax] : [0, 100]}
-            ticks={matchTrajectoryStyle ? yTicksDynamic : Y_TICKS}
+            ticks={yTicks}
             axisLine={{ stroke: "#52525b", opacity: 0.35 }}
             tickLine={false}
-            tick={{ fill: "#71717a", fontSize: 11 }}
-            width={matchTrajectoryStyle ? 52 : 34}
+            tick={{ fill: "#71717a", fontSize: axisFontSize }}
+            width={yAxisWidth}
           />
           <Tooltip
             cursor={{ stroke: "#71717a", strokeOpacity: 0.4, strokeDasharray: "3 3" }}
-            content={<ProjectionChartTooltip metric={metric} />}
+            content={<ProjectionChartTooltip metric={metric} compact={isCompact} />}
           />
 
           {!matchTrajectoryStyle ? <ReferenceLine x={nowX} stroke="#71717a" strokeDasharray="2 5" strokeOpacity={0.65} strokeWidth={1} /> : null}
 
           {visibleScenarios.includes("baseline") ? (
-            <Line type="monotone" dataKey="baseline" stroke={STROKE_MAP.baseline} {...DOTLESS_LINE} />
+            <Line type="monotone" dataKey="baseline" stroke={STROKE_MAP.baseline} {...DOTLESS_LINE} strokeWidth={isCompact ? 2.6 : 2.3} />
           ) : null}
           {visibleScenarios.includes("stabilize") ? (
-            <Line type="monotone" dataKey="stabilize" stroke={STROKE_MAP.stabilize} {...DOTLESS_LINE} />
+            <Line type="monotone" dataKey="stabilize" stroke={STROKE_MAP.stabilize} {...DOTLESS_LINE} strokeWidth={isCompact ? 2.6 : 2.3} />
           ) : null}
           {visibleScenarios.includes("overload") ? (
-            <Line type="monotone" dataKey="overload" stroke={STROKE_MAP.overload} {...DOTLESS_LINE} />
+            <Line type="monotone" dataKey="overload" stroke={STROKE_MAP.overload} {...DOTLESS_LINE} strokeWidth={isCompact ? 2.6 : 2.3} />
           ) : null}
           {visibleScenarios.includes("custom") ? (
             <Line
@@ -169,6 +186,7 @@ export function ProjectionChartView({
               stroke={STROKE_MAP.custom}
               strokeDasharray="5 4"
               {...DOTLESS_LINE}
+              strokeWidth={isCompact ? 2.6 : 2.3}
             />
           ) : null}
           {visibleScenarios.includes("protocol") ? (
@@ -178,6 +196,7 @@ export function ProjectionChartView({
               stroke={STROKE_MAP.protocol}
               strokeDasharray="2 3"
               {...DOTLESS_LINE}
+              strokeWidth={isCompact ? 2.6 : 2.3}
             />
           ) : null}
           {visibleScenarios.includes("compareB") ? (
@@ -187,10 +206,12 @@ export function ProjectionChartView({
               stroke={STROKE_MAP.compareB}
               strokeDasharray="6 4"
               {...DOTLESS_LINE}
+              strokeWidth={isCompact ? 2.6 : 2.3}
             />
           ) : null}
 
-          {endLabels.map((item) => (
+          {showEndLabels
+            ? endLabels.map((item) => (
             <ReferenceDot
               key={`end-${item.key}`}
               x={item.dayIndex}
@@ -206,7 +227,8 @@ export function ProjectionChartView({
                 dy: item.dy,
               }}
             />
-          ))}
+              ))
+            : null}
         </LineChart>
       </ResponsiveContainer>
     </div>

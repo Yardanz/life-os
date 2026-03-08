@@ -12,6 +12,7 @@ import {
 } from "@/components/control-room/projection/NewScenarioModal";
 import { UpgradePromptModal } from "@/components/control-room/UpgradePromptModal";
 import { ErrorIdNotice } from "@/components/ui/ErrorIdNotice";
+import { ModalShell } from "@/components/ui/ModalShell";
 import type { AntiChaosProtocol } from "@/lib/anti-chaos/antiChaos.types";
 import { generate72hProtocol } from "@/lib/engine/protocol72h";
 import type { Locale } from "@/lib/i18n";
@@ -279,6 +280,7 @@ export function ProjectionScenarioChart({
   const [newScenarioErrorId, setNewScenarioErrorId] = useState<string | null>(null);
   const [upgradePromptOpen, setUpgradePromptOpen] = useState(false);
   const [upgradePromptCapability, setUpgradePromptCapability] = useState<string | null>(null);
+  const [projectionHelpOpen, setProjectionHelpOpen] = useState(false);
   const [overloadEnabled, setOverloadEnabled] = useState<boolean>(guardrail.level === 0);
   const protocol72h = useMemo(
     () =>
@@ -718,12 +720,10 @@ export function ProjectionScenarioChart({
             <h3 className="text-lg font-semibold text-zinc-100">Last 30 days</h3>
             <button
               type="button"
-              onClick={() => void saveScenario()}
-              disabled={saveLoading || readOnly}
-              title={readOnly ? "Simulation account is read-only." : !isPro ? "Extension layer: forward simulation & scenarios" : undefined}
+              onClick={() => setProjectionHelpOpen(true)}
               className="rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-200 hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {t("saveScenario", locale)} {!isPro ? "Operator capability" : ""}
+              Help
             </button>
           </div>
           <div className="flex items-center gap-2 text-xs text-zinc-400">
@@ -772,48 +772,57 @@ export function ProjectionScenarioChart({
           <p className="mb-2 text-xs text-rose-300">{saveError}</p>
         )
       ) : null}
-      <div className="mb-3 inline-flex rounded-md border border-zinc-700 bg-zinc-950/80 p-0.5 text-[11px]">
-        <button
-          type="button"
-          onClick={() => setViewMode("projection30d")}
-          className={`rounded px-2 py-1 transition ${
-            viewMode === "projection30d" ? "bg-cyan-500/20 text-cyan-100" : "text-zinc-400 hover:text-zinc-200"
-          }`}
-        >
-          30-Day trajectory
-        </button>
-        <button
-          type="button"
-          onClick={() => setViewMode("envelope72h")}
-          className={`rounded px-2 py-1 transition ${
-            viewMode === "envelope72h" ? "bg-cyan-500/20 text-cyan-100" : "text-zinc-400 hover:text-zinc-200"
-          }`}
-        >
-          {t("envelope72h", locale)}
-        </button>
-        <button
-          type="button"
-          onClick={toggleOverload}
-          disabled={overloadToggleDisabled}
-          title={
-            overloadBlockedByGuardrail
-              ? `Locked by guardrail${guardrail.reasons.length > 0 ? `: ${guardrail.reasons.join(", ")}` : ""}`
-              : overloadExceedsBudget
-                ? "Exceeds 72h Budget"
-              : guardrail.level === 1
-                ? "Proceed into overload simulation?"
-                : "Toggle overload scenario"
-          }
-          className={`rounded px-2 py-1 transition ${
-            overloadToggleDisabled
-              ? "cursor-not-allowed text-zinc-500"
-              : overloadEnabled
-                ? "bg-rose-500/20 text-rose-100"
-                : "text-zinc-400 hover:text-zinc-200"
-          }`}
-        >
-          {t("overload", locale)} {overloadEnabled ? t("on", locale) : t("off", locale)}
-        </button>
+      <div className="mb-3 space-y-2 rounded-lg border border-zinc-800/80 bg-zinc-950/45 p-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] uppercase tracking-[0.12em] text-zinc-500">Chart mode</p>
+          <div className="inline-flex rounded-md border border-zinc-700 bg-zinc-950/80 p-0.5 text-[11px]">
+            <button
+              type="button"
+              onClick={() => setViewMode("projection30d")}
+              className={`rounded px-2 py-1 transition ${
+                viewMode === "projection30d" ? "bg-cyan-500/20 text-cyan-100" : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              30-Day trajectory
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("envelope72h")}
+              className={`rounded px-2 py-1 transition ${
+                viewMode === "envelope72h" ? "bg-cyan-500/20 text-cyan-100" : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              {t("envelope72h", locale)}
+            </button>
+          </div>
+        </div>
+        <div className="border-t border-zinc-800/80" />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] uppercase tracking-[0.12em] text-zinc-500">Overload simulation</p>
+          <button
+            type="button"
+            onClick={toggleOverload}
+            disabled={overloadToggleDisabled}
+            title={
+              overloadBlockedByGuardrail
+                ? `Locked by guardrail${guardrail.reasons.length > 0 ? `: ${guardrail.reasons.join(", ")}` : ""}`
+                : overloadExceedsBudget
+                  ? "Exceeds 72h Budget"
+                : guardrail.level === 1
+                  ? "Proceed into overload simulation?"
+                  : "Toggle overload scenario"
+            }
+            className={`min-h-9 rounded-md border px-2.5 py-1 text-xs transition ${
+              overloadToggleDisabled
+                ? "cursor-not-allowed border-zinc-700 bg-zinc-900 text-zinc-500"
+                : overloadEnabled
+                  ? "border-rose-500/50 bg-rose-500/15 text-rose-100"
+                  : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500"
+            }`}
+          >
+            {t("overload", locale)}: {overloadEnabled ? t("on", locale) : t("off", locale)}
+          </button>
+        </div>
       </div>
       {overloadBlockLabel ? (
         <div className="mb-3">
@@ -959,120 +968,143 @@ export function ProjectionScenarioChart({
         )
       ) : hasData ? (
         <>
-          <ProjectionChartContainer
-            locale={locale}
-            projection={projection}
-            custom={custom}
-            compareEnabled={compareEnabled}
-            compareB={compareSeries}
-            antiChaosProtocol={activeProtocol}
-            selectedDateISO={selectedDateISO}
-            isPro={isPro}
-            customLoading={customLoading}
-            showOverload={overloadEnabled}
-            matchTrajectoryStyle={matchTrajectoryStyle}
-          />
-          <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/65 px-3 py-2">
-              <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1 text-xs">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!isPro) {
-                      showUpgradePrompt("Compare ON");
-                      return;
-                    }
-                    setCompareEnabled((prev) => !prev);
-                  }}
-                  title={!isPro ? "Extension layer: forward simulation & scenarios" : undefined}
-                  className={`min-h-9 rounded-md border px-2.5 py-1 transition ${
-                    compareEnabled
-                      ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-100"
-                      : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500"
-                  }`}
+          <section>
+            <p className="mb-2 text-[11px] uppercase tracking-[0.12em] text-zinc-500">Chart projection</p>
+            <ProjectionChartContainer
+              locale={locale}
+              projection={projection}
+              custom={custom}
+              compareEnabled={compareEnabled}
+              compareB={compareSeries}
+              antiChaosProtocol={activeProtocol}
+              selectedDateISO={selectedDateISO}
+              isPro={isPro}
+              customLoading={customLoading}
+              showOverload={overloadEnabled}
+              matchTrajectoryStyle={matchTrajectoryStyle}
+            />
+          </section>
+
+          <div className="my-4 border-t border-zinc-800/80" />
+
+          <section className="rounded-md border border-zinc-800 bg-zinc-950/65 px-3 py-2">
+            <p className="mb-2 text-[11px] uppercase tracking-[0.12em] text-zinc-500">Scenario actions</p>
+            <div className="flex flex-wrap items-start gap-2 text-xs sm:items-center">
+              <button
+                type="button"
+                onClick={() => void saveScenario()}
+                disabled={saveLoading || readOnly}
+                title={readOnly ? "Simulation account is read-only." : !isPro ? "Extension layer: forward simulation & scenarios" : undefined}
+                className="min-h-9 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {t("saveScenario", locale)} {!isPro ? "Operator capability" : ""}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isPro) {
+                    showUpgradePrompt("Compare ON");
+                    return;
+                  }
+                  setCompareEnabled((prev) => !prev);
+                }}
+                title={!isPro ? "Extension layer: forward simulation & scenarios" : undefined}
+                className={`min-h-9 rounded-md border px-2.5 py-1 transition ${
+                  compareEnabled
+                    ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-100"
+                    : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500"
+                }`}
+              >
+                Compare {compareEnabled ? "ON" : "OFF"} {!isPro ? "Operator capability" : ""}
+              </button>
+              <span className="text-zinc-500">Scenario A: BASE</span>
+              <span className="hidden text-zinc-600 sm:inline">|</span>
+              <span className="text-zinc-500">Scenario B:</span>
+              <select
+                value={compareScenarioId}
+                onChange={(event) => setCompareScenarioId(event.target.value)}
+                disabled={!isPro}
+                title={!isPro ? "Extension layer: forward simulation & scenarios" : undefined}
+                className="min-h-9 w-full rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 sm:w-auto"
+              >
+                {libraryRows.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {(row.name && row.name.trim().length > 0 ? row.name : row.source).toUpperCase()}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  if (readOnly) {
+                    setNewScenarioError("Simulation account is read-only.");
+                    setNewScenarioErrorId(null);
+                    return;
+                  }
+                  if (!isPro) {
+                    showUpgradePrompt("New scenario");
+                    return;
+                  }
+                  setNewScenarioError(null);
+                  setNewScenarioOpen(true);
+                }}
+                disabled={readOnly}
+                title={readOnly ? "Simulation account is read-only." : !isPro ? "Extension layer: forward simulation & scenarios" : undefined}
+                className="min-h-9 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                New scenario {!isPro ? "Operator capability" : ""}
+              </button>
+              {!isPro ? (
+                <Link
+                  href="/pricing"
+                  className="min-h-9 w-full rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-200 transition hover:border-amber-400 sm:w-auto"
                 >
-                  Compare {compareEnabled ? "ON" : "OFF"} {!isPro ? "Operator capability" : ""}
-                </button>
-                <span className="text-zinc-500">Scenario A: Current (Baseline)</span>
-                <span className="text-zinc-600">|</span>
-                <span className="text-zinc-500">Scenario B:</span>
-                <select
-                  value={compareScenarioId}
-                  onChange={(event) => setCompareScenarioId(event.target.value)}
-                  disabled={!isPro}
-                  title={!isPro ? "Extension layer: forward simulation & scenarios" : undefined}
-                  className="min-h-9 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200"
-                >
-                  {libraryRows.map((row) => (
-                    <option key={row.id} value={row.id}>
-                      {(row.name && row.name.trim().length > 0 ? row.name : row.source).toUpperCase()}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (readOnly) {
-                      setNewScenarioError("Simulation account is read-only.");
-                      setNewScenarioErrorId(null);
-                      return;
-                    }
-                    if (!isPro) {
-                      showUpgradePrompt("New scenario");
-                      return;
-                    }
-                    setNewScenarioError(null);
-                    setNewScenarioOpen(true);
-                  }}
-                  disabled={readOnly}
-                  title={readOnly ? "Simulation account is read-only." : !isPro ? "Extension layer: forward simulation & scenarios" : undefined}
-                  className="min-h-9 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  New scenario {!isPro ? "Operator capability" : ""}
-                </button>
-                {!isPro ? (
-                  <Link
-                    href="/pricing"
-                    className="min-h-9 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-200 transition hover:border-amber-400"
-                  >
-                    Pay for Operator License
-                  </Link>
-                ) : null}
-              </div>
-              {compareEnabled && compareLimited ? (
-                <p className="mt-2 text-xs text-amber-300">Compare limited (low confidence)</p>
-              ) : null}
-              {compareEnabled && compareDelta ? (
-                <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-[11px] tabular-nums">
-                  <span className="text-zinc-500">Delta strip @D30</span>
-                  <span className="text-zinc-600">|</span>
-                  <span className={`${compareDelta.life >= 0 ? "text-emerald-200" : "text-rose-200"}`}>
-                    DeltaLifeScore: {compareDelta.life >= 0 ? "+" : ""}
-                    {compareDelta.life.toFixed(1)}
-                  </span>
-                  <span className="text-zinc-600">|</span>
-                  <span className={`${compareDelta.risk >= 0 ? "text-rose-200" : "text-emerald-200"}`}>
-                    DeltaRisk: {compareDelta.risk >= 0 ? "+" : ""}
-                    {compareDelta.risk.toFixed(1)}
-                  </span>
-                  <span className="text-zinc-600">|</span>
-                  <span className="text-zinc-300">
-                    Guardrail drift: {compareDelta.guardrailFrom} {"->"} {compareDelta.guardrailTo}
-                  </span>
-                </div>
+                  Pay for Operator License
+                </Link>
               ) : null}
             </div>
+            {compareEnabled && compareLimited ? (
+              <p className="mt-2 text-xs text-amber-300">Compare limited (low confidence)</p>
+            ) : null}
+            {compareEnabled && compareDelta ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-[11px] tabular-nums">
+                <span className={`${compareDelta.life >= 0 ? "text-emerald-200" : "text-rose-200"}`}>
+                  Δ LifeScore: {compareDelta.life >= 0 ? "+" : ""}
+                  {compareDelta.life.toFixed(1)}
+                </span>
+                <span className="text-zinc-600">|</span>
+                <span className={`${compareDelta.risk >= 0 ? "text-rose-200" : "text-emerald-200"}`}>
+                  Δ Risk: {compareDelta.risk >= 0 ? "+" : ""}
+                  {compareDelta.risk.toFixed(1)}
+                </span>
+                <span className="text-zinc-600">|</span>
+                {compareDelta.guardrailFrom === compareDelta.guardrailTo ? (
+                  <span className="text-zinc-300">Guardrail unchanged</span>
+                ) : (
+                  <span className="text-zinc-300">
+                    Guardrail: {compareDelta.guardrailFrom} {"->"} {compareDelta.guardrailTo}
+                  </span>
+                )}
+              </div>
+            ) : null}
+          </section>
 
-          <AntiChaosPanel
-            locale={locale}
-            isPro={isPro}
-            horizonHours={horizonHours}
-            onHorizonChange={setHorizon}
-            onGenerate={() => void generateProtocol()}
-            onUpgradePrompt={showUpgradePrompt}
-            loading={protocolLoading}
-            protocol={activeProtocol}
-            error={protocolError}
-          />
+          <div className="my-4 border-t border-zinc-800/80" />
+
+          <section>
+            <p className="mb-2 text-[11px] uppercase tracking-[0.12em] text-zinc-500">Protocol generation</p>
+            <AntiChaosPanel
+              locale={locale}
+              isPro={isPro}
+              horizonHours={horizonHours}
+              onHorizonChange={setHorizon}
+              onGenerate={() => void generateProtocol()}
+              onUpgradePrompt={showUpgradePrompt}
+              loading={protocolLoading}
+              protocol={activeProtocol}
+              error={protocolError}
+            />
+          </section>
 
           {isPro ? (
             <details className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-3">
@@ -1219,15 +1251,20 @@ export function ProjectionScenarioChart({
               ) : null}
             </details>
           ) : null}
-          <ScenarioLibraryPanel
-            locale={locale}
-            isPro={isPro}
-            loading={libraryLoading}
-            rows={libraryRows}
-            selectedIds={selectedScenarioIds}
-            onToggleSelect={toggleScenarioSelect}
-            onRefresh={() => void loadScenarioLibrary()}
-          />
+          <div className="my-4 border-t border-zinc-800/80" />
+
+          <section>
+            <p className="mb-2 text-[11px] uppercase tracking-[0.12em] text-zinc-500">Scenario library</p>
+            <ScenarioLibraryPanel
+              locale={locale}
+              isPro={isPro}
+              loading={libraryLoading}
+              rows={libraryRows}
+              selectedIds={selectedScenarioIds}
+              onToggleSelect={toggleScenarioSelect}
+              onRefresh={() => void loadScenarioLibrary()}
+            />
+          </section>
         </>
       ) : (
         <div className="flex h-52 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 text-sm text-zinc-400">
@@ -1257,6 +1294,47 @@ export function ProjectionScenarioChart({
           setUpgradePromptCapability(null);
         }}
       />
+      <ModalShell
+        open={projectionHelpOpen}
+        onClose={() => setProjectionHelpOpen(false)}
+        ariaLabel="Projection help"
+        panelClassName="max-w-xl p-5 sm:p-6"
+      >
+        {({ requestClose }) => (
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <h4 className="text-lg font-semibold text-zinc-100">Scenario projection help</h4>
+              <button
+                type="button"
+                onClick={() => requestClose()}
+                className="min-h-9 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-200 transition hover:border-zinc-500"
+              >
+                Close
+              </button>
+            </div>
+            <div className="space-y-3 text-sm text-zinc-300">
+              <section className="rounded-md border border-zinc-800 bg-zinc-950/70 p-3">
+                <p className="text-xs uppercase tracking-[0.12em] text-zinc-500">BASE trajectory</p>
+                <p className="mt-1">
+                  BASE is the default forward path from your current state without additional intervention changes.
+                </p>
+              </section>
+              <section className="rounded-md border border-zinc-800 bg-zinc-950/70 p-3">
+                <p className="text-xs uppercase tracking-[0.12em] text-zinc-500">Scenario comparison</p>
+                <p className="mt-1">
+                  Compare overlays saved Scenario B against BASE (Scenario A) and shows deltas at day 30.
+                </p>
+              </section>
+              <section className="rounded-md border border-zinc-800 bg-zinc-950/70 p-3">
+                <p className="text-xs uppercase tracking-[0.12em] text-zinc-500">How to use</p>
+                <p className="mt-1">Save Scenario: snapshot current/custom/protocol trajectory into the library.</p>
+                <p className="mt-1">Compare: turn ON, choose Scenario B, then review Δ LifeScore, Δ Risk, and guardrail change.</p>
+                <p className="mt-1">Generate Protocol: build the 24h/48h/72h protocol in the protocol section and optionally save it.</p>
+              </section>
+            </div>
+          </div>
+        )}
+      </ModalShell>
     </section>
   );
 }

@@ -3384,58 +3384,61 @@ export function ControlRoomDashboard({
                     Generate Snapshot Link
                   </button>
                 </div>
-                {snapshotNotice ? <p className="mt-2 text-[11px] text-emerald-300/90">{snapshotNotice}</p> : null}
+                {snapshotNotice ? <p className="mt-2 break-all text-[11px] text-emerald-300/90">{snapshotNotice}</p> : null}
                 {snapshotsError ? <p className="mt-2 text-[11px] text-rose-300/90">{snapshotsError}</p> : null}
                 {snapshotsLoading ? (
                   <p className="mt-2 text-[11px] text-zinc-500">Loading...</p>
                 ) : snapshots.length === 0 ? (
                   <p className="mt-2 text-[11px] text-zinc-500">No snapshots yet.</p>
                 ) : (
-                  <div className="mt-2 overflow-x-auto">
-                    <ul className="min-w-[620px] space-y-1.5 text-xs text-zinc-300">
-                      {snapshots.map((row) => (
+                  <ul className="mt-2 space-y-1.5 text-xs text-zinc-300">
+                    {snapshots.map((row) => {
+                      const isExpired = new Date(row.expiresAt).getTime() <= Date.now();
+                      return (
                         <li
                           key={row.id}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-zinc-800 bg-zinc-950/60 px-2.5 py-2"
+                          className="rounded-md border border-zinc-800 bg-zinc-950/60 px-2.5 py-2"
                         >
-                          <div className="text-zinc-400">
-                            <p>{new Date(row.createdAt).toLocaleString()}</p>
-                            <p className="text-[10px] text-zinc-500">Expires: {new Date(row.expiresAt).toLocaleString()}</p>
-                          </div>
-                          <span
-                            className={`rounded-full border px-2 py-0.5 text-[10px] ${
-                              row.revokedAt
-                                ? "border-zinc-700 text-zinc-400"
-                                : new Date(row.expiresAt).getTime() <= Date.now()
-                                  ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
-                                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
-                            }`}
-                          >
-                            {row.revokedAt ? "Revoked" : new Date(row.expiresAt).getTime() <= Date.now() ? "Expired" : "Active"}
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => void handleCopySnapshotLink(row.token, row.id)}
-                              className="min-h-9 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-200 hover:border-zinc-500"
-                              disabled={Boolean(row.revokedAt) || new Date(row.expiresAt).getTime() <= Date.now()}
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="text-zinc-400">
+                              <p>{new Date(row.createdAt).toLocaleString()}</p>
+                              <p className="text-[10px] text-zinc-500">Expires: {new Date(row.expiresAt).toLocaleString()}</p>
+                            </div>
+                            <span
+                              className={`self-start rounded-full border px-2 py-0.5 text-[10px] sm:self-auto ${
+                                row.revokedAt
+                                  ? "border-zinc-700 text-zinc-400"
+                                  : isExpired
+                                    ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                                    : "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+                              }`}
                             >
-                              {snapshotCopiedId === row.id ? "Copied" : "Copy link"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void handleRevokeSnapshot(row.id)}
-                              className="min-h-9 rounded border border-rose-700/60 bg-rose-900/20 px-2 py-1 text-[11px] text-rose-200 hover:border-rose-500/70 disabled:cursor-not-allowed disabled:opacity-50"
-                              disabled={Boolean(row.revokedAt) || isDemoReadOnly}
-                              title={isDemoReadOnly ? "Simulation account is read-only." : undefined}
-                            >
-                              Revoke
-                            </button>
+                              {row.revokedAt ? "Revoked" : isExpired ? "Expired" : "Active"}
+                            </span>
+                            <div className="grid w-full grid-cols-2 gap-1.5 sm:flex sm:w-auto sm:items-center">
+                              <button
+                                type="button"
+                                onClick={() => void handleCopySnapshotLink(row.token, row.id)}
+                                className="min-h-9 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-200 hover:border-zinc-500"
+                                disabled={Boolean(row.revokedAt) || isExpired}
+                              >
+                                {snapshotCopiedId === row.id ? "Copied" : "Copy link"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleRevokeSnapshot(row.id)}
+                                className="min-h-9 rounded border border-rose-700/60 bg-rose-900/20 px-2 py-1 text-[11px] text-rose-200 hover:border-rose-500/70 disabled:cursor-not-allowed disabled:opacity-50"
+                                disabled={Boolean(row.revokedAt) || isDemoReadOnly}
+                                title={isDemoReadOnly ? "Simulation account is read-only." : undefined}
+                              >
+                                Revoke
+                              </button>
+                            </div>
                           </div>
                         </li>
-                      ))}
-                    </ul>
-                  </div>
+                      );
+                    })}
+                  </ul>
                 )}
               </section>
             </>

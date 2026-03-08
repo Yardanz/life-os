@@ -12,6 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useIsCompactViewport } from "@/hooks/useIsCompactViewport";
 
 type OnboardingTutorialModalProps = {
   open: boolean;
@@ -44,32 +45,61 @@ const DEMO_30D: DemoPoint30d[] = [
   { day: "D29", baseline: 49.2, stabilize: 57.4, overload: 45.2 },
 ];
 
-function baseTooltip({
+function Demo7dTooltip({
   active,
   payload,
+  compact = false,
 }: {
   active?: boolean;
   payload?: ReadonlyArray<{ payload?: DemoPoint7d }>;
+  compact?: boolean;
 }) {
   if (!active || !payload?.length || !payload[0]?.payload) return null;
   const row = payload[0].payload;
   return (
-    <div className="rounded-md border border-zinc-700 bg-zinc-900/95 px-2 py-1 text-xs text-zinc-200">
-      <p className="font-medium">{row.day}</p>
+    <div
+      className={`rounded-md border border-zinc-700 bg-zinc-900/95 text-zinc-200 shadow-lg shadow-black/40 ${
+        compact ? "w-[min(10.5rem,calc(100vw-1.25rem))] px-2.5 py-2 text-[11px]" : "px-2 py-1 text-xs"
+      }`}
+    >
+      <p className="font-medium text-zinc-100">{row.day}</p>
       <p>Life Score: {row.lifeScore.toFixed(1)}</p>
     </div>
   );
 }
 
-function operatorTooltip({
+function Demo30dTooltip({
   active,
   payload,
+  compact = false,
 }: {
   active?: boolean;
   payload?: ReadonlyArray<{ payload?: DemoPoint30d }>;
+  compact?: boolean;
 }) {
   if (!active || !payload?.length || !payload[0]?.payload) return null;
   const row = payload[0].payload;
+
+  const stbDelta = row.stabilize - row.baseline;
+  const ovrDelta = row.overload - row.baseline;
+
+  if (compact) {
+    return (
+      <div className="w-[min(11.5rem,calc(100vw-1.25rem))] rounded-md border border-zinc-700 bg-zinc-900/95 px-2.5 py-2 text-[11px] text-zinc-200 shadow-lg shadow-black/40">
+        <p className="font-medium text-zinc-100">{row.day}</p>
+        <p className="mt-0.5 text-cyan-200">BASE {row.baseline.toFixed(1)}</p>
+        <p className="text-emerald-200">
+          STB {stbDelta >= 0 ? "+" : ""}
+          {stbDelta.toFixed(1)}
+        </p>
+        <p className="text-rose-200">
+          OVR {ovrDelta >= 0 ? "+" : ""}
+          {ovrDelta.toFixed(1)}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-md border border-zinc-700 bg-zinc-900/95 px-2 py-1 text-xs text-zinc-200">
       <p className="font-medium">{row.day}</p>
@@ -81,41 +111,96 @@ function operatorTooltip({
 }
 
 function Demo7dChart() {
+  const isCompact = useIsCompactViewport();
+  const xTicks = isCompact ? [DEMO_7D[0].day, DEMO_7D[3].day, DEMO_7D[6].day] : undefined;
+  const yTicks = isCompact ? [40, 50, 60] : [35, 45, 55, 65];
+
   return (
     <div className="rounded-md border border-zinc-800 bg-zinc-950/70 p-3">
       <p className="text-xs uppercase tracking-[0.12em] text-zinc-500">7-day trajectory preview</p>
-      <div className="mt-2 h-44 rounded-md border border-zinc-800 bg-zinc-950/80 p-2">
+      <div className={`${isCompact ? "h-56" : "h-44"} mt-2 rounded-md border border-zinc-800 bg-zinc-950/80 p-2`}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={DEMO_7D} margin={{ top: 8, right: 12, bottom: 8, left: 8 }}>
-            <CartesianGrid stroke="rgb(39 39 42)" vertical={false} />
-            <XAxis dataKey="day" tick={{ fill: "rgb(113 113 122)", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "rgb(82 82 91)" }} />
-            <YAxis domain={[35, 65]} tick={{ fill: "rgb(113 113 122)", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "rgb(82 82 91)" }} width={40} />
-            <Tooltip content={baseTooltip} cursor={{ stroke: "rgb(113 113 122)", strokeDasharray: "3 3", strokeOpacity: 0.5 }} />
-            <Line type="monotone" dataKey="lifeScore" stroke="rgb(34 211 238)" strokeWidth={2.1} dot={{ r: 2.3, fill: "rgb(34 211 238)" }} />
+          <LineChart data={DEMO_7D} margin={isCompact ? { top: 12, right: 8, bottom: 14, left: 0 } : { top: 8, right: 12, bottom: 8, left: 8 }}>
+            <CartesianGrid stroke="rgb(39 39 42)" strokeDasharray={isCompact ? "3 5" : undefined} vertical={false} />
+            <XAxis
+              dataKey="day"
+              ticks={xTicks}
+              tick={{ fill: "rgb(113 113 122)", fontSize: isCompact ? 12 : 10 }}
+              tickLine={false}
+              axisLine={{ stroke: "rgb(82 82 91)" }}
+              minTickGap={isCompact ? 28 : 12}
+            />
+            <YAxis
+              domain={[35, 65]}
+              ticks={yTicks}
+              tick={{ fill: "rgb(113 113 122)", fontSize: isCompact ? 12 : 10 }}
+              tickLine={false}
+              axisLine={{ stroke: "rgb(82 82 91)" }}
+              width={isCompact ? 34 : 40}
+            />
+            <Tooltip
+              content={<Demo7dTooltip compact={isCompact} />}
+              cursor={{ stroke: "rgb(113 113 122)", strokeDasharray: "3 3", strokeOpacity: 0.5 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="lifeScore"
+              stroke="rgb(34 211 238)"
+              strokeWidth={isCompact ? 2.8 : 2.1}
+              dot={{ r: isCompact ? 3.2 : 2.3, fill: "rgb(34 211 238)" }}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
+      {isCompact ? <p className="mt-2 text-[11px] text-zinc-500">Preview: direction over 7 days.</p> : null}
     </div>
   );
 }
 
 function Demo30dChart() {
+  const isCompact = useIsCompactViewport();
+  const xTicks = isCompact ? ["D0", "D14", "D29"] : undefined;
+  const yTicks = isCompact ? [40, 50, 60] : [35, 45, 55, 65];
+
   return (
     <div className="rounded-md border border-zinc-800 bg-zinc-950/70 p-3">
       <p className="text-xs uppercase tracking-[0.12em] text-zinc-500">30-day advanced trajectory preview</p>
-      <div className="mt-2 h-48 rounded-md border border-zinc-800 bg-zinc-950/80 p-2">
+      <div className={`${isCompact ? "h-60" : "h-48"} mt-2 rounded-md border border-zinc-800 bg-zinc-950/80 p-2`}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={DEMO_30D} margin={{ top: 8, right: 12, bottom: 8, left: 8 }}>
-            <CartesianGrid stroke="rgb(39 39 42)" vertical={false} />
-            <XAxis dataKey="day" tick={{ fill: "rgb(113 113 122)", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "rgb(82 82 91)" }} />
-            <YAxis domain={[35, 65]} tick={{ fill: "rgb(113 113 122)", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "rgb(82 82 91)" }} width={40} />
-            <Tooltip content={operatorTooltip} cursor={{ stroke: "rgb(113 113 122)", strokeDasharray: "3 3", strokeOpacity: 0.5 }} />
-            <Line type="monotone" dataKey="baseline" stroke="rgb(34 211 238)" strokeWidth={2.1} dot={false} />
-            <Line type="monotone" dataKey="stabilize" stroke="rgb(52 211 153)" strokeWidth={2.1} dot={false} />
-            <Line type="monotone" dataKey="overload" stroke="rgb(251 113 133)" strokeWidth={2.1} dot={false} />
+          <LineChart data={DEMO_30D} margin={isCompact ? { top: 12, right: 8, bottom: 14, left: 0 } : { top: 8, right: 12, bottom: 8, left: 8 }}>
+            <CartesianGrid stroke="rgb(39 39 42)" strokeDasharray={isCompact ? "3 5" : undefined} vertical={false} />
+            <XAxis
+              dataKey="day"
+              ticks={xTicks}
+              tick={{ fill: "rgb(113 113 122)", fontSize: isCompact ? 12 : 10 }}
+              tickLine={false}
+              axisLine={{ stroke: "rgb(82 82 91)" }}
+              minTickGap={isCompact ? 24 : 12}
+            />
+            <YAxis
+              domain={[35, 65]}
+              ticks={yTicks}
+              tick={{ fill: "rgb(113 113 122)", fontSize: isCompact ? 12 : 10 }}
+              tickLine={false}
+              axisLine={{ stroke: "rgb(82 82 91)" }}
+              width={isCompact ? 34 : 40}
+            />
+            <Tooltip
+              content={<Demo30dTooltip compact={isCompact} />}
+              cursor={{ stroke: "rgb(113 113 122)", strokeDasharray: "3 3", strokeOpacity: 0.5 }}
+            />
+            <Line type="monotone" dataKey="baseline" stroke="rgb(34 211 238)" strokeWidth={isCompact ? 2.6 : 2.1} dot={false} />
+            <Line type="monotone" dataKey="stabilize" stroke="rgb(52 211 153)" strokeWidth={isCompact ? 2.6 : 2.1} dot={false} />
+            <Line type="monotone" dataKey="overload" stroke="rgb(251 113 133)" strokeWidth={isCompact ? 2.6 : 2.1} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+        <span className="rounded border border-zinc-700 bg-zinc-900/80 px-2 py-0.5 text-cyan-200">BASE</span>
+        <span className="rounded border border-zinc-700 bg-zinc-900/80 px-2 py-0.5 text-emerald-200">STB</span>
+        <span className="rounded border border-zinc-700 bg-zinc-900/80 px-2 py-0.5 text-rose-200">OVR</span>
+      </div>
+      {isCompact ? <p className="mt-2 text-[11px] text-zinc-500">Preview: 30-day scenario contrast (not full analysis).</p> : null}
     </div>
   );
 }

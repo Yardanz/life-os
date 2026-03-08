@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PLANS } from "@/lib/billing/config";
 import { getOperatorStatusLabel } from "@/lib/billing/statusLabel";
+import { markBackNavigationScrollReset } from "@/lib/navigation/backScrollReset";
 
 type BillingPanelProps = {
   entitlement: {
@@ -68,6 +69,7 @@ export function BillingPanel({ entitlement, orders }: BillingPanelProps) {
     }
 
     if (window.history.length > 1) {
+      markBackNavigationScrollReset();
       router.back();
       return;
     }
@@ -150,22 +152,24 @@ export function BillingPanel({ entitlement, orders }: BillingPanelProps) {
         {orders.length === 0 ? (
           <p className="mt-2 text-sm text-zinc-500">No billing orders yet.</p>
         ) : (
-          <div className="mt-2 overflow-x-auto">
-            <ul className="min-w-[720px] space-y-1.5 text-xs text-zinc-300">
-              {orders.map((order) => (
-                <li key={order.id} className="rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-2">
-                  <p className="font-mono text-zinc-100">{order.id}</p>
-                  <p className="mt-0.5 text-zinc-400">
-                    {order.planCode} - {order.status} - {order.amount} {order.currency}
-                  </p>
-                  <p className="mt-0.5 text-zinc-500">
-                    Created: {new Date(order.createdAt).toLocaleString()}
-                    {order.paidAt ? ` - Paid: ${new Date(order.paidAt).toLocaleString()}` : ""}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <ul className="mt-2 space-y-1.5 text-xs text-zinc-300">
+            {orders.map((order) => (
+              <li key={order.id} className="rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-2">
+                <p className="font-mono text-zinc-100 break-all">{order.id}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-zinc-400">
+                  <span>{order.planCode}</span>
+                  <span className="text-zinc-600">|</span>
+                  <span>{order.status}</span>
+                  <span className="text-zinc-600">|</span>
+                  <span>
+                    {order.amount} {order.currency}
+                  </span>
+                </div>
+                <p className="mt-1 text-zinc-500">Created: {new Date(order.createdAt).toLocaleString()}</p>
+                {order.paidAt ? <p className="mt-0.5 text-zinc-500">Paid: {new Date(order.paidAt).toLocaleString()}</p> : null}
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </main>
