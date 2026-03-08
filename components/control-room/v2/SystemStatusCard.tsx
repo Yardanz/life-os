@@ -1,5 +1,7 @@
 "use client";
 
+import { InlineThemeToggle } from "@/components/theme/InlineThemeToggle";
+
 type SystemStatusCardProps = {
   lifeScore: number;
   direction: "up" | "flat" | "down";
@@ -96,15 +98,18 @@ export function SystemStatusCard({
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">System Status</p>
-        {onGoHome ? (
-          <button
-            type="button"
-            onClick={onGoHome}
-            className="min-h-9 rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1 text-[11px] text-zinc-200 transition hover:border-zinc-500"
-          >
-            Home
-          </button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <InlineThemeToggle />
+          {onGoHome ? (
+            <button
+              type="button"
+              onClick={onGoHome}
+              className="min-h-9 rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1 text-[11px] text-zinc-200 transition hover:border-zinc-500"
+            >
+              Home
+            </button>
+          ) : null}
+        </div>
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">

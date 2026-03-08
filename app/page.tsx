@@ -5,6 +5,7 @@ import { LandingBottomCtas } from "@/components/landing/LandingBottomCtas";
 import { SmoothScrollButton } from "@/components/landing/SmoothScrollButton";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { PublicFooter } from "@/components/public/PublicFooter";
+import { InlineThemeToggle } from "@/components/theme/InlineThemeToggle";
 import { t } from "@/lib/i18n";
 
 export default async function LandingPage() {
@@ -31,6 +32,7 @@ export default async function LandingPage() {
         <header className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs uppercase tracking-[0.24em] text-zinc-400">LIFE OS</p>
           <div className="flex flex-wrap items-center gap-2 text-sm">
+            <InlineThemeToggle />
             {session ? (
               <>
                 <Link

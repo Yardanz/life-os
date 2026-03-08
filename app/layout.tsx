@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { GlobalThemeToggle } from "@/components/theme/GlobalThemeToggle";
 import { BackScrollResetOnNavigation } from "@/components/navigation/BackScrollResetOnNavigation";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
@@ -26,7 +25,6 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <GlobalThemeToggle />
         <BackScrollResetOnNavigation />
         {children}
       </body>
