@@ -131,7 +131,7 @@ export function SystemEvolutionStrip({
   onOpenTutorial,
   onStageClick,
 }: SystemEvolutionStripProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => collapsible);
   const done = Math.max(0, Math.min(7, onboardingProgressCheckins));
 
   if (collapsed && collapsible) {
@@ -166,7 +166,7 @@ export function SystemEvolutionStrip({
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 sm:p-6">
+    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4 sm:p-6">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">System Evolution</p>
         <div className="flex w-full flex-wrap items-center gap-2.5 sm:w-auto sm:shrink-0">

@@ -84,8 +84,8 @@ export function ScenarioLibraryPanel({
   const base = selectedRows[0] ?? null;
 
   return (
-    <section className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-3">
-      <div className="mb-3 flex items-center justify-between">
+    <section className="mt-2 rounded-lg border border-zinc-800 bg-zinc-950/60 p-2.5 sm:mt-3 sm:p-3">
+      <div className="mb-2 flex items-center justify-between sm:mb-3">
         <h4 className="text-sm font-medium text-zinc-200">{t("scenarioLibrary", locale)}</h4>
         <button
           type="button"

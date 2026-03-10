@@ -225,8 +225,8 @@ function StepCheckinEntryPreview() {
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
         <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
           <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">Next action</p>
-          <p className="mt-1 text-sm text-zinc-300">Record today&apos;s check-in to update current system state.</p>
-          <NextActionPrimaryButton label="Record today's check-in" inert />
+          <p className="mt-1 text-sm text-zinc-300">Record daily check-in to update the current operational day.</p>
+          <NextActionPrimaryButton label="Record daily check-in" inert />
           <p className="mt-2 text-xs text-zinc-500">Demo preview only</p>
         </div>
       </section>

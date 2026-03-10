@@ -67,35 +67,47 @@ export default async function LandingPage() {
         </header>
 
         <section className="mt-16 lg:mt-20">
-          <div>
+          <div className="max-w-3xl">
             <p className="text-xs uppercase tracking-[0.28em] text-zinc-500">Operational Interface</p>
             <h1 className="mt-4 text-3xl font-semibold leading-tight sm:text-5xl">
               {t("landingHeroTitle")}
             </h1>
-            <p className="mt-4 max-w-2xl text-base text-zinc-300 sm:text-lg">{t("landingHeroSubtitle")}</p>
+            <p className="mt-4 max-w-[62ch] text-base text-zinc-300 sm:text-lg">{t("landingHeroSubtitle")}</p>
             <div className="mt-5 space-y-4">
-              <div className="rounded-lg border border-zinc-800/80 bg-zinc-900/40 p-3">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">What It Is Not</p>
-                <div className="mt-2 space-y-1 text-sm font-medium text-zinc-200">
-                  <p>Not motivation.</p>
-                  <p>Not streaks.</p>
-                  <p>Not AI advice.</p>
+              <div className="rounded-lg border border-zinc-800/80 bg-zinc-900/45 p-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">What It Is Not</p>
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">Boundary conditions</p>
                 </div>
+                <ul className="mt-2 grid gap-1.5 text-sm font-medium text-zinc-200 sm:grid-cols-3">
+                  <li className="inline-flex items-center gap-2">
+                    <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-zinc-500" />
+                    <span>Not motivation</span>
+                  </li>
+                  <li className="inline-flex items-center gap-2">
+                    <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-zinc-500" />
+                    <span>Not streaks</span>
+                  </li>
+                  <li className="inline-flex items-center gap-2">
+                    <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-zinc-500" />
+                    <span>Not AI advice</span>
+                  </li>
+                </ul>
               </div>
 
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-cyan-100">A deterministic stability model.</p>
-                <p className="text-xs text-zinc-500">Built on deterministic state modeling. No black-box inference.</p>
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium text-cyan-100">Deterministic stability model.</p>
+                <p className="max-w-[62ch] text-xs leading-relaxed text-zinc-500">Built on deterministic state modeling. No black-box inference.</p>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Positioning</p>
                 <p className="text-sm text-zinc-300">Most tools help you do more.</p>
                 <p className="text-sm font-medium text-zinc-100">LIFE OS prevents system collapse.</p>
               </div>
             </div>
 
-            <ul className="mt-4 grid gap-1 text-xs text-zinc-400 sm:grid-cols-3">
+            <ul className="mt-5 grid gap-1.5 text-xs text-zinc-400 sm:grid-cols-3">
               <li className="flex items-center gap-2">
                 <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-cyan-400/80" />
                 It detects instability before burnout happens
@@ -109,10 +121,10 @@ export default async function LandingPage() {
                 Constraints are deterministic.
               </li>
             </ul>
-            <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
+            <div className="mt-7 grid gap-2.5 sm:flex sm:flex-wrap sm:items-center">
               <Link
                 href={primaryHref}
-                className="inline-flex min-h-10 items-center justify-center rounded-md border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 transition duration-200 hover:border-cyan-300"
+                className="inline-flex min-h-10 items-center justify-center rounded-md border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 shadow-[0_0_0_1px_rgba(34,211,238,0.12)] transition duration-200 hover:border-cyan-300"
               >
                 {t("ctaEnterControlRoom")}
               </Link>
@@ -121,9 +133,12 @@ export default async function LandingPage() {
                 headingId="how-it-works-heading"
                 className="inline-flex min-h-10 items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition duration-200 hover:border-zinc-500"
               >
-                How the system works &darr;
+                System architecture &darr;
               </SmoothScrollButton>
             </div>
+            <p className="mt-2 text-[11px] text-zinc-500">
+              {session ? "Continue into the live operational interface." : "Sign in required for live operational interface access."}
+            </p>
           </div>
         </section>
 

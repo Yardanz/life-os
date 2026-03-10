@@ -119,6 +119,16 @@
   border-color: rgba(23, 143, 189, 0.52);
 }
 
+:root[data-theme="light"] .control-room-main :is(button, a)[class*="hover:border-zinc-500"]:not([aria-disabled="true"]):not(:disabled):hover {
+  border-color: #8ea2b8;
+  background-color: rgba(226, 232, 240, 0.58);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+:root[data-theme="light"] .control-room-main :is(button, a)[class*="hover:text-zinc-100"]:not([aria-disabled="true"]):not(:disabled):hover {
+  color: #0f172a;
+}
+
 :root[data-theme="light"] .light-lift-card {
   transition:
     transform 120ms ease,
@@ -158,12 +168,16 @@ html {
   scroll-behavior: smooth;
   overflow-x: hidden;
   overflow-y: scroll;
-  scrollbar-gutter: stable both-edges;
+  scrollbar-gutter: stable;
 }
 
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid rgba(34, 211, 238, 0.75);
   outline-offset: 2px;
+}
+
+:root[data-modal-scroll-lock="true"] .modal-scroll-lock-compensate-right {
+  right: var(--modal-scrollbar-compensation, 0px);
 }
 
 .landing-section-highlight {
@@ -188,22 +202,22 @@ html {
 @keyframes modalIn {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1);
   }
 }
 
 @keyframes modalOut {
   from {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1);
   }
   to {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: scale(0.98);
   }
 }
 

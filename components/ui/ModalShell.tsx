@@ -21,7 +21,12 @@ const BODY_SCROLL_LOCK_KEY = "__lifeosModalScrollLock";
 
 type BodyScrollLockState = {
   count: number;
-  previousOverflow: string;
+  previousBodyOverflow: string;
+  previousBodyPaddingRight: string;
+  previousHtmlOverflowY: string;
+  previousHtmlScrollbarGutter: string;
+  previousHtmlModalLockAttr: string | null;
+  previousHtmlScrollbarCompensation: string;
 };
 
 export function ModalShell({ open, onClose, ariaLabel, panelClassName, children }: ModalShellProps) {
@@ -40,7 +45,6 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
       }
       closeTimerRef.current = window.setTimeout(() => {
         closeTimerRef.current = null;
-        setIsClosing(false);
         afterClose?.();
         onClose();
       }, CLOSE_ANIMATION_MS);
@@ -79,6 +83,7 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
 
   useEffect(() => {
     if (!open) return;
+    const html = document.documentElement;
     const body = document.body;
     const lockStore = window as Window & {
       [BODY_SCROLL_LOCK_KEY]?: BodyScrollLockState;
@@ -87,12 +92,34 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
       lockStore[BODY_SCROLL_LOCK_KEY] ??
       ({
         count: 0,
-        previousOverflow: "",
+        previousBodyOverflow: "",
+        previousBodyPaddingRight: "",
+        previousHtmlOverflowY: "",
+        previousHtmlScrollbarGutter: "",
+        previousHtmlModalLockAttr: null,
+        previousHtmlScrollbarCompensation: "",
       } satisfies BodyScrollLockState);
 
     if (current.count === 0) {
-      current.previousOverflow = body.style.overflow;
+      current.previousBodyOverflow = body.style.overflow;
+      current.previousBodyPaddingRight = body.style.paddingRight;
+      current.previousHtmlOverflowY = html.style.overflowY;
+      current.previousHtmlScrollbarGutter = html.style.scrollbarGutter;
+      current.previousHtmlModalLockAttr = html.dataset.modalScrollLock ?? null;
+      current.previousHtmlScrollbarCompensation = html.style.getPropertyValue("--modal-scrollbar-compensation");
+
+      const scrollbarWidth = Math.max(0, window.innerWidth - html.clientWidth);
+
+      html.dataset.modalScrollLock = "true";
+      html.style.setProperty("--modal-scrollbar-compensation", `${scrollbarWidth}px`);
+      html.style.scrollbarGutter = "auto";
+      html.style.overflowY = "hidden";
       body.style.overflow = "hidden";
+      if (scrollbarWidth > 0) {
+        body.style.paddingRight = `${scrollbarWidth}px`;
+      } else {
+        body.style.paddingRight = "";
+      }
     }
 
     current.count += 1;
@@ -104,7 +131,20 @@ export function ModalShell({ open, onClose, ariaLabel, panelClassName, children 
 
       active.count = Math.max(0, active.count - 1);
       if (active.count === 0) {
-        body.style.overflow = active.previousOverflow;
+        body.style.overflow = active.previousBodyOverflow;
+        body.style.paddingRight = active.previousBodyPaddingRight;
+        html.style.overflowY = active.previousHtmlOverflowY;
+        html.style.scrollbarGutter = active.previousHtmlScrollbarGutter;
+        if (active.previousHtmlModalLockAttr == null) {
+          delete html.dataset.modalScrollLock;
+        } else {
+          html.dataset.modalScrollLock = active.previousHtmlModalLockAttr;
+        }
+        if (active.previousHtmlScrollbarCompensation) {
+          html.style.setProperty("--modal-scrollbar-compensation", active.previousHtmlScrollbarCompensation);
+        } else {
+          html.style.removeProperty("--modal-scrollbar-compensation");
+        }
         delete lockStore[BODY_SCROLL_LOCK_KEY];
       } else {
         lockStore[BODY_SCROLL_LOCK_KEY] = active;

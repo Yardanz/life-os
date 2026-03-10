@@ -713,11 +713,11 @@ export function ProjectionScenarioChart({
   };
 
   return (
-    <section className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
+    <section className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-3 sm:p-4">
       <header className="mb-3 flex items-center justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-zinc-100">Last 30 days</h3>
+            <h3 className="text-lg font-semibold text-zinc-100">30-day projection</h3>
             <button
               type="button"
               onClick={() => setProjectionHelpOpen(true)}
@@ -726,6 +726,7 @@ export function ProjectionScenarioChart({
               Help
             </button>
           </div>
+          <p className="text-xs text-zinc-500">Forward trajectory projection from current operational state.</p>
           <div className="flex items-center gap-2 text-xs text-zinc-400">
             <span>{t("modelConfidence", locale)}: {modelConfidence.confidence.toFixed(2)}</span>
             <span
@@ -783,7 +784,7 @@ export function ProjectionScenarioChart({
                 viewMode === "projection30d" ? "bg-cyan-500/20 text-cyan-100" : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              30-Day trajectory
+              30-Day projection
             </button>
             <button
               type="button"
@@ -969,7 +970,7 @@ export function ProjectionScenarioChart({
       ) : hasData ? (
         <>
           <section>
-            <p className="mb-2 text-[11px] uppercase tracking-[0.12em] text-zinc-500">Chart projection</p>
+            <p className="mb-2 text-[11px] uppercase tracking-[0.12em] text-zinc-500">Projection telemetry</p>
             <ProjectionChartContainer
               locale={locale}
               projection={projection}
@@ -985,7 +986,7 @@ export function ProjectionScenarioChart({
             />
           </section>
 
-          <div className="my-4 border-t border-zinc-800/80" />
+          <div className="my-3 border-t border-zinc-800/80 sm:my-4" />
 
           <section className="rounded-md border border-zinc-800 bg-zinc-950/65 px-3 py-2">
             <p className="mb-2 text-[11px] uppercase tracking-[0.12em] text-zinc-500">Scenario actions</p>
@@ -1089,7 +1090,7 @@ export function ProjectionScenarioChart({
             ) : null}
           </section>
 
-          <div className="my-4 border-t border-zinc-800/80" />
+          <div className="my-3 border-t border-zinc-800/80 sm:my-4" />
 
           <section>
             <p className="mb-2 text-[11px] uppercase tracking-[0.12em] text-zinc-500">Protocol generation</p>
@@ -1107,7 +1108,7 @@ export function ProjectionScenarioChart({
           </section>
 
           {isPro ? (
-            <details className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-3">
+            <details className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-3 sm:mt-4">
               <summary className="cursor-pointer list-none text-sm font-medium text-zinc-200">
                 {t("interventionSimulator", locale)}
               </summary>
@@ -1251,7 +1252,7 @@ export function ProjectionScenarioChart({
               ) : null}
             </details>
           ) : null}
-          <div className="my-4 border-t border-zinc-800/80" />
+          <div className="my-3 border-t border-zinc-800/80 sm:my-4" />
 
           <section>
             <p className="mb-2 text-[11px] uppercase tracking-[0.12em] text-zinc-500">Scenario library</p>

@@ -154,6 +154,7 @@ type ProjectionCustomResponse =
 type UiPlanMode = "live" | "free" | "pro";
 const UI_PLAN_STORAGE_KEY = "lifeos.controlroom.uiPlanMode";
 const CHECKIN_STORAGE_PREFIX = "lifeos.checkin";
+const CONTROL_ROOM_INIT_MIN_MS = 420;
 
 function parseUiPlanMode(value: string | null): UiPlanMode | null {
   if (value === "live" || value === "free" || value === "pro") return value;
@@ -174,6 +175,34 @@ function clearCheckinLocalCache(): void {
   } catch {
     // no-op
   }
+}
+
+type EmptyOperationalSectionCardProps = {
+  title: string;
+  onRecordFirstCheckin: () => void;
+};
+
+function EmptyOperationalSectionCard({ title, onRecordFirstCheckin }: EmptyOperationalSectionCardProps) {
+  return (
+    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 sm:p-6">
+      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">{title}</p>
+      <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950/70 px-3 py-3">
+        <p className="text-sm font-medium text-zinc-100">No operational data yet.</p>
+        <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+          Record your first daily check-in
+          <br />
+          to initialize system telemetry.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onRecordFirstCheckin}
+        className="mt-3 min-h-10 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-400"
+      >
+        Record first check-in
+      </button>
+    </section>
+  );
 }
 
 export function ControlRoomV2({
@@ -203,6 +232,8 @@ export function ControlRoomV2({
   const [setupState, setSetupState] = useState<SetupStatePayload | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [timerNow, setTimerNow] = useState(new Date());
+  const [initUiMinElapsed, setInitUiMinElapsed] = useState(false);
+  const hasFinishedInitialLoadRef = useRef(false);
 
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [checkInModalDate, setCheckInModalDate] = useState<string | null>(null);
@@ -299,6 +330,13 @@ export function ControlRoomV2({
   useEffect(() => {
     const id = window.setInterval(() => setTimerNow(new Date()), 60_000);
     return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setInitUiMinElapsed(true);
+    }, CONTROL_ROOM_INIT_MIN_MS);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   const activeProtocol = useMemo(() => {
@@ -815,6 +853,13 @@ export function ControlRoomV2({
     if (last - first < -1) return "down";
     return "flat";
   }, [data?.series7d]);
+  const lifeScoreTrendDelta = useMemo(() => {
+    const points = data?.series7d ?? [];
+    if (points.length < 2) return 0;
+    const first = points[0]?.lifeScore ?? 0;
+    const last = points[points.length - 1]?.lifeScore ?? first;
+    return last - first;
+  }, [data?.series7d]);
   const showAdvancedTrajectory = operatorPlanEnabled && onboardingProgressCheckins >= 3 && (data?.featureAccess?.forecast30d ?? true);
 
   useEffect(() => {
@@ -1022,7 +1067,7 @@ export function ControlRoomV2({
   const interpretationLines =
     stateExplanation.lines.length > 0
       ? stateExplanation.lines.slice(0, 3)
-      : ["Collect today's check-in to refresh guidance."];
+      : ["Record daily check-in to refresh guidance."];
   const confidenceHint =
     calibrationStage.stage === "STABILIZED"
       ? "Model confidence high"
@@ -1033,7 +1078,6 @@ export function ControlRoomV2({
   const hasCheckinForOperationalDate = Boolean(data?.todayCheckInExists);
   const checkinMode: "create" | "edit" = hasCheckinForOperationalDate ? "edit" : "create";
   const actionDate = operationalDate;
-  const isHistoricalView = selectedDate !== todayDayKey;
   const showEvolutionBlock = totalCheckins <= 7;
   const remainingWindowLabel =
     nextCheckinAvailability.msRemaining == null
@@ -1051,22 +1095,11 @@ export function ControlRoomV2({
     : remainingWindowLabel
       ? `Next window in ${remainingWindowLabel}`
       : "Next window pending";
-  const primaryActionLabel = checkinMode === "edit" ? "Update today's check-in" : "Record today's check-in";
-  const nextActionTitle = isHistoricalView
-    ? "Review current system state"
-    : hasCheckinForOperationalDate
-      ? "Today's check-in already recorded"
-      : nextCheckinAvailability.availableNow
-        ? "Record today's check-in"
-        : "Next check-in not available yet";
-  const nextActionDescription = isHistoricalView
-    ? "New check-ins apply to the current operational day."
-    : hasCheckinForOperationalDate
-      ? "Current operational day already has a check-in."
-      : nextCheckinAvailability.availableNow
-        ? "Update system state with current signals and refresh guidance."
-        : "Latest confirmed state remains active until the next check-in window opens.";
-  const nextActionStatusItems = [`Operational date: ${operationalDate}`, `Mode: ${checkinMode.toUpperCase()}`, nextWindowStatus];
+  const primaryActionLabel = checkinMode === "edit" ? "Update daily check-in" : "Record daily check-in";
+  const nextActionTitle = checkinMode === "edit" ? "Update daily check-in" : "Record daily check-in";
+  const nextActionDescription = "New check-ins update the current operational day.";
+  const actionModeLabel = checkinMode === "edit" ? "UPDATE" : "RECORD";
+  const nextActionStatusItems = [`Operational date: ${operationalDate}`, `Action mode: ${actionModeLabel}`, nextWindowStatus];
   const latestUnlockedMilestoneLabel: "—" | "Day 3" | "Day 5" | "Day 7" =
     latestUnlockedMilestone === 3
       ? "Day 3"
@@ -1108,9 +1141,51 @@ export function ControlRoomV2({
     });
   }, [activeProtocol, appVersion, confidencePct, data, isDemoReadOnly, pathname, searchParams]);
 
+  const controlRoomLabel = (
+    <section className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-2.5">
+      <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/80">CONTROL ROOM</p>
+      <p className="mt-0.5 text-xs text-zinc-500">Operational interface</p>
+    </section>
+  );
+
+  if (!loading) {
+    hasFinishedInitialLoadRef.current = true;
+  }
+  const showInitializationScreen = !hasFinishedInitialLoadRef.current || !initUiMinElapsed;
+
+  if (showInitializationScreen) {
+    return (
+      <main id="main-content" className="control-room-main min-h-screen overflow-x-hidden bg-transparent px-3 py-7 text-zinc-100 sm:px-6 sm:py-10">
+        <section className="mx-auto max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4 sm:p-6">
+          <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">CONTROL ROOM</p>
+          <div className="mt-3 h-px overflow-hidden rounded bg-zinc-800/90">
+            <div className={`h-full bg-cyan-400/65 transition-all duration-150 ${loading ? "w-1/2 animate-pulse" : "w-full"}`} />
+          </div>
+          <div aria-live="polite" className="mt-3 space-y-2.5 text-sm">
+            <p className="flex items-center gap-2 text-zinc-100">
+              <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-cyan-300/80 animate-pulse" />
+              Initializing LIFE OS...
+            </p>
+            <p className="flex items-center gap-2 text-zinc-300">
+              <span
+                aria-hidden
+                className={`h-1.5 w-1.5 rounded-full border border-zinc-600 ${loading ? "bg-zinc-500/70 animate-pulse" : "bg-emerald-300/85 border-emerald-400/40"}`}
+              />
+              Loading operational data...
+            </p>
+            <p className={`flex items-center gap-2 transition-opacity duration-150 ${loading ? "opacity-35 text-zinc-500" : "opacity-100 text-emerald-200"}`}>
+              <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${loading ? "bg-zinc-600" : "bg-emerald-300/90"}`} />
+              Control Room ready.
+            </p>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   if (loading) {
     return (
-      <main id="main-content" className="min-h-screen overflow-x-hidden bg-transparent px-3 py-10 text-zinc-100 sm:px-6">
+      <main id="main-content" className="control-room-main min-h-screen overflow-x-hidden bg-transparent px-3 py-7 text-zinc-100 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-4xl animate-pulse space-y-4">
           <div className="h-40 rounded-2xl bg-zinc-900" />
           <div className="h-44 rounded-2xl bg-zinc-900" />
@@ -1122,7 +1197,7 @@ export function ControlRoomV2({
 
   if (error) {
     return (
-      <main id="main-content" className="min-h-screen overflow-x-hidden bg-transparent px-3 py-10 text-zinc-100 sm:px-6">
+      <main id="main-content" className="control-room-main min-h-screen overflow-x-hidden bg-transparent px-3 py-7 text-zinc-100 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-2xl rounded-xl border border-rose-500/40 bg-rose-950/20 p-5">
           <h1 className="text-lg font-semibold text-rose-200">Control Room unavailable</h1>
           <p className="mt-2 text-sm text-rose-200/80">{error}</p>
@@ -1134,22 +1209,13 @@ export function ControlRoomV2({
   if (!data) {
     return (
       <>
-        <main id="main-content" className="min-h-screen overflow-x-hidden bg-transparent px-3 py-10 text-zinc-100 sm:px-6">
-          <div className="mx-auto max-w-4xl space-y-5">
-            {showEvolutionBlock ? (
-              <SystemEvolutionStrip
-                currentDay={evolution.currentDay}
-                onboardingProgressCheckins={evolution.onboardingProgressCheckins}
-                nextUnlockDay={evolution.nextUnlockDay}
-                operatorPlanEnabled={operatorPlanEnabled}
-                collapsible
-                onOpenTutorial={handleOpenTutorial}
-                onStageClick={handleStageClick}
-              />
-            ) : null}
+        <main id="main-content" className="control-room-main min-h-screen overflow-x-hidden bg-transparent px-3 py-7 text-zinc-100 sm:px-6 sm:py-10">
+          <div className="mx-auto max-w-4xl space-y-4 sm:space-y-5">
+            {controlRoomLabel}
             <SystemStatusCard
               lifeScore={0}
               direction="flat"
+              lifeScoreTrendDelta={0}
               state="OPEN"
               confidencePct={Math.max(0, Math.min(100, Math.round((setupState?.confidence ?? 0) * 100)))}
               interpretationLines={["No check-in recorded yet.", "State will become personalized after your first check-in."]}
@@ -1170,8 +1236,14 @@ export function ControlRoomV2({
               onPrimaryAction={() => openCheckInModal(actionDate)}
               onViewLastCheckin={null}
             />
-            <LockedSectionCard title="Trajectory" unlockDay={3} />
-            <LockedSectionCard title="Partial diagnostics" unlockDay={5} />
+            <EmptyOperationalSectionCard
+              title="Trajectory telemetry"
+              onRecordFirstCheckin={() => openCheckInModal(actionDate)}
+            />
+            <EmptyOperationalSectionCard
+              title="System telemetry"
+              onRecordFirstCheckin={() => openCheckInModal(actionDate)}
+            />
             <AdvancedControls
               readOnly={isDemoReadOnly}
               onExport={() => setExportModalOpen(true)}
@@ -1182,6 +1254,17 @@ export function ControlRoomV2({
               onReset={() => setResetModalOpen(true)}
               onDelete={() => setDeleteAccountModalOpen(true)}
             />
+            {showEvolutionBlock ? (
+              <SystemEvolutionStrip
+                currentDay={evolution.currentDay}
+                onboardingProgressCheckins={evolution.onboardingProgressCheckins}
+                nextUnlockDay={evolution.nextUnlockDay}
+                operatorPlanEnabled={operatorPlanEnabled}
+                collapsible
+                onOpenTutorial={handleOpenTutorial}
+                onStageClick={handleStageClick}
+              />
+            ) : null}
             {showDebugPanel ? (
               <DebugSystemPanel
                 userId={userId}
@@ -1276,29 +1359,20 @@ export function ControlRoomV2({
 
   return (
     <>
-      <main id="main-content" className="min-h-screen overflow-x-hidden bg-transparent px-3 py-8 text-zinc-100 sm:px-6">
-        <div className="mx-auto max-w-4xl space-y-5">
+      <main id="main-content" className="control-room-main min-h-screen overflow-x-hidden bg-transparent px-3 py-6 text-zinc-100 sm:px-6 sm:py-8">
+        <div className="mx-auto max-w-4xl space-y-4 sm:space-y-5">
+          {controlRoomLabel}
           {fallbackFromDate && data?.date ? (
             <section className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
               No check-in for selected date {fallbackFromDate}. Showing latest available data from {data.date}.
             </section>
           ) : null}
           <UnlockNotice message={unlockNotice} onClose={() => setUnlockNotice(null)} />
-          {showEvolutionBlock ? (
-            <SystemEvolutionStrip
-              currentDay={evolution.currentDay}
-              onboardingProgressCheckins={evolution.onboardingProgressCheckins}
-              nextUnlockDay={evolution.nextUnlockDay}
-              operatorPlanEnabled={operatorPlanEnabled}
-              collapsible
-              onOpenTutorial={handleOpenTutorial}
-              onStageClick={handleStageClick}
-            />
-          ) : null}
 
           <SystemStatusCard
             lifeScore={data.snapshot.lifeScore}
             direction={lifeScoreDirection}
+            lifeScoreTrendDelta={lifeScoreTrendDelta}
             state={data.guardrail.label}
             confidencePct={confidencePct}
             interpretationLines={interpretationLines}
@@ -1322,7 +1396,8 @@ export function ControlRoomV2({
           />
 
           {trajectoryUnlocked ? (
-            <>
+            <section className="space-y-3 sm:space-y-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">SYSTEM TELEMETRY</p>
               <TrajectoryCard points={data.series7d} risk={data.systemMetrics.risk} recovery={data.systemMetrics.recovery} />
               {showAdvancedTrajectory ? (
                 projectionLoading ? (
@@ -1371,7 +1446,7 @@ export function ControlRoomV2({
                   </div>
                 ) : null
               ) : null}
-            </>
+            </section>
           ) : (
             <LockedSectionCard title="Trajectory" unlockDay={3} />
           )}
@@ -1412,6 +1487,17 @@ export function ControlRoomV2({
             onReset={() => setResetModalOpen(true)}
             onDelete={() => setDeleteAccountModalOpen(true)}
           />
+          {showEvolutionBlock ? (
+            <SystemEvolutionStrip
+              currentDay={evolution.currentDay}
+              onboardingProgressCheckins={evolution.onboardingProgressCheckins}
+              nextUnlockDay={evolution.nextUnlockDay}
+              operatorPlanEnabled={operatorPlanEnabled}
+              collapsible
+              onOpenTutorial={handleOpenTutorial}
+              onStageClick={handleStageClick}
+            />
+          ) : null}
 
           {showDebugPanel ? (
             <DebugSystemPanel

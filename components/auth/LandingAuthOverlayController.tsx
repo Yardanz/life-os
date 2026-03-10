@@ -23,7 +23,7 @@ export function LandingAuthOverlayController() {
     next.delete("mode");
     next.delete("error");
     const query = next.toString();
-    router.replace(query ? `/?${query}` : "/");
+    router.replace(query ? `/?${query}` : "/", { scroll: false });
   };
 
   return <AuthModal open={open} callbackUrl={callbackUrl} mode={mode} authError={authError} onClose={closeOverlay} />;
