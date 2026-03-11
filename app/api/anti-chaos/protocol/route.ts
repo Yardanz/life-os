@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { antiChaosProtocolPayloadSchema } from "@/lib/api/schemas";
 import { ApiError, errorResponse } from "@/lib/api/errors";
-import { requireProPlan } from "@/lib/api/plan";
+import { ensureUserWithPlan, isPro } from "@/lib/api/plan";
 import { ensureLiveDemoData } from "@/lib/demo/seedLiveDemo";
 import { isDemoModeRequest, LIVE_DEMO_USER_ID } from "@/lib/demoMode";
 import { generateAntiChaosProtocol } from "@/lib/anti-chaos/antiChaos";
@@ -9,16 +10,31 @@ import { persistAntiChaosProtocol } from "@/lib/anti-chaos/persistAntiChaosProto
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    const sessionUserId = session?.user?.id;
+    if (!sessionUserId) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
     const demoMode = isDemoModeRequest(request);
+    const effectiveUserId = demoMode ? LIVE_DEMO_USER_ID : sessionUserId;
     if (demoMode) {
       await ensureLiveDemoData();
     }
-    const payload = antiChaosProtocolPayloadSchema.parse(await request.json());
-    const effectiveUserId = demoMode ? LIVE_DEMO_USER_ID : payload.userId;
-    await requireProPlan(effectiveUserId, request);
+    const rawPayload = (await request.json()) as Record<string, unknown>;
+    const payload = antiChaosProtocolPayloadSchema.parse({
+      ...rawPayload,
+      userId: effectiveUserId,
+    });
+    const user = await ensureUserWithPlan(effectiveUserId, request, { allowCreate: false });
+    if (!isPro(user)) {
+      throw new ApiError(403, "Operator capability required.", {
+        code: "OPERATOR_REQUIRED",
+        message: "Pay for Operator License to access this feature.",
+      });
+    }
 
     const protocol = await generateAntiChaosProtocol({
-      userId: effectiveUserId,
+      userId: user.id,
       dateISO: payload.date,
       horizonHours: payload.horizonHours,
     });
@@ -31,25 +47,32 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const demoMode = isDemoModeRequest(request);
-    if (demoMode) {
-      await ensureLiveDemoData();
+    const session = await auth();
+    const sessionUserId = session?.user?.id;
+    if (!sessionUserId) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
+    const demoMode = isDemoModeRequest(request);
+    const effectiveUserId = demoMode ? LIVE_DEMO_USER_ID : sessionUserId;
     const { searchParams } = new URL(request.url);
     const parsed = antiChaosProtocolPayloadSchema.parse({
-      userId: searchParams.get("userId") ?? LIVE_DEMO_USER_ID,
+      userId: effectiveUserId,
       date: searchParams.get("date"),
       horizonHours: searchParams.get("horizonHours") ? Number(searchParams.get("horizonHours")) : 24,
     });
-    const effectiveUserId = demoMode ? LIVE_DEMO_USER_ID : parsed.userId;
-    await requireProPlan(effectiveUserId, request);
+    const user = await ensureUserWithPlan(parsed.userId, request, { allowCreate: false });
+    if (!isPro(user)) {
+      throw new ApiError(403, "Operator capability required.", {
+        code: "OPERATOR_REQUIRED",
+        message: "Pay for Operator License to access this feature.",
+      });
+    }
 
     const protocol = await generateAntiChaosProtocol({
-      userId: effectiveUserId,
+      userId: user.id,
       dateISO: parsed.date,
       horizonHours: parsed.horizonHours,
     });
-    await persistAntiChaosProtocol(protocol);
     return NextResponse.json({ ok: true, data: protocol }, { status: 200 });
   } catch (error) {
     if (error instanceof ApiError && error.status === 403) {

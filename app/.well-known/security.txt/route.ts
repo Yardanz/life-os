@@ -1,12 +1,12 @@
-const DEFAULT_CONTACT = "mailto:security@example.com";
+import { getSupportMailto } from "@/lib/supportContact";
+
+const DEFAULT_CONTACT = getSupportMailto();
 
 function buildSecurityTxt(): string {
-  const contactEmail = process.env.SECURITY_CONTACT_EMAIL?.trim();
-  const contact = contactEmail ? `mailto:${contactEmail}` : DEFAULT_CONTACT;
   const expires = new Date();
   expires.setUTCFullYear(expires.getUTCFullYear() + 1);
 
-  return `Contact: ${contact}\nExpires: ${expires.toISOString()}\n`;
+  return `Contact: ${DEFAULT_CONTACT}\nExpires: ${expires.toISOString()}\n`;
 }
 
 export async function GET() {

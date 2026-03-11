@@ -11,6 +11,7 @@ import { ensureLiveDemoData } from "@/lib/demo/seedLiveDemo";
 import { DEMO_MODE_COOKIE, DEMO_MODE_COOKIE_VALUE, LIVE_DEMO_USER_ID, isDemoModeEnabled } from "@/lib/demoMode";
 import { canAccessApp } from "@/lib/softLaunch";
 import { startTiming } from "@/lib/observability/timing";
+import { getSupportEmail } from "@/lib/supportContact";
 import { ControlRoomV2 } from "@/components/control-room/v2/ControlRoomV2";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 
@@ -70,7 +71,7 @@ export default async function AppControlRoomPage({ searchParams }: AppControlRoo
   const latestCheckinDate = latestCheckin ? formatISODate(latestCheckin.date) : null;
   const initialSelectedDate = explicitDate ?? latestCheckinDate ?? getLocalISODate();
   const appVersion = process.env.VERSION ?? process.env.VERCEL_GIT_COMMIT_SHA ?? "dev";
-  const supportEmail = process.env.SUPPORT_EMAIL ?? process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? null;
+  const supportEmail = getSupportEmail();
   const controlRoomDebugEnabled = String(process.env.CONTROL_ROOM_DEBUG ?? "").toLowerCase() === "true";
   const initialActiveProtocol = activeProtocol
       ? {

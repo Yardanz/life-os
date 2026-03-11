@@ -13,25 +13,35 @@ export function PricingCapabilityActions({
   isAuthenticated,
   returnHref,
 }: PricingCapabilityActionsProps) {
-  const [loadingPlan, setLoadingPlan] = useState<null | "OPERATOR_MONTHLY" | "OPERATOR_YEARLY">(null);
+  const [loadingPlan, setLoadingPlan] = useState<null | "OPERATOR_MONTHLY" | "OPERATOR_YEARLY">(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
 
   const createInvoice = async (planCode: "OPERATOR_MONTHLY" | "OPERATOR_YEARLY") => {
     try {
       setLoadingPlan(planCode);
       setError(null);
-      const response = await fetch("/api/billing/create-invoice", {
+      const response = await fetch("/api/billing/nowpayments/create", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ planCode }),
       });
       const payload = (await response.json()) as
-        | { ok: true; data: { invoiceUrl: string } }
+        | { ok: true; data: { checkoutUrl?: string; invoiceUrl?: string } }
         | { ok: false; error?: string; message?: string };
       if (!response.ok || !payload.ok) {
-        throw new Error(payload.ok ? "Failed to create invoice." : payload.error ?? payload.message ?? "Failed to create invoice.");
+        throw new Error(
+          payload.ok
+            ? "Failed to create invoice."
+            : (payload.error ?? payload.message ?? "Failed to create invoice.")
+        );
       }
-      window.location.href = payload.data.invoiceUrl;
+      const checkoutUrl = payload.data.checkoutUrl ?? payload.data.invoiceUrl;
+      if (!checkoutUrl) {
+        throw new Error("Checkout URL is missing.");
+      }
+      window.location.href = checkoutUrl;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create invoice.");
     } finally {
@@ -63,7 +73,9 @@ export function PricingCapabilityActions({
                 disabled={loadingPlan !== null}
                 className="min-h-10 w-full rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loadingPlan === "OPERATOR_MONTHLY" ? "Creating invoice..." : "Pay monthly"}
+                {loadingPlan === "OPERATOR_MONTHLY"
+                  ? "Creating checkout..."
+                  : "Unlock Operator License (Monthly)"}
               </button>
             ) : (
               <Link
@@ -97,7 +109,9 @@ export function PricingCapabilityActions({
                 disabled={loadingPlan !== null}
                 className="min-h-10 w-full rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loadingPlan === "OPERATOR_YEARLY" ? "Creating invoice..." : "Pay yearly"}
+                {loadingPlan === "OPERATOR_YEARLY"
+                  ? "Creating checkout..."
+                  : "Unlock Operator License (Yearly)"}
               </button>
             ) : (
               <Link

@@ -2,13 +2,10 @@ import Link from "next/link";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BackNavButton } from "@/components/ui/BackNavButton";
-
-function resolveSupportEmail(): string {
-  return process.env.SUPPORT_EMAIL ?? process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@lifeos.local";
-}
+import { getSupportEmail } from "@/lib/supportContact";
 
 export default function SupportPage() {
-  const supportEmail = resolveSupportEmail();
+  const supportEmail = getSupportEmail();
   const mailtoHref = `mailto:${supportEmail}?subject=${encodeURIComponent("LIFE OS Support Request")}`;
 
   return (

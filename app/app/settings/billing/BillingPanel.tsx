@@ -43,18 +43,24 @@ export function BillingPanel({ entitlement, orders }: BillingPanelProps) {
     try {
       setLoading(planCode);
       setError(null);
-      const response = await fetch("/api/billing/create-invoice", {
+      const response = await fetch("/api/billing/nowpayments/create", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ planCode }),
       });
       const payload = (await response.json()) as
-        | { ok: true; data: { orderId: string; invoiceUrl: string } }
+        | { ok: true; data: { orderId: string; checkoutUrl?: string; invoiceUrl?: string } }
         | { ok: false; error?: string };
       if (!response.ok || !payload.ok) {
-        throw new Error(payload.ok ? "Failed to create invoice." : payload.error ?? "Failed to create invoice.");
+        throw new Error(
+          payload.ok ? "Failed to create invoice." : (payload.error ?? "Failed to create invoice.")
+        );
       }
-      window.location.href = payload.data.invoiceUrl;
+      const checkoutUrl = payload.data.checkoutUrl ?? payload.data.invoiceUrl;
+      if (!checkoutUrl) {
+        throw new Error("Checkout URL is missing.");
+      }
+      window.location.href = checkoutUrl;
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : "Failed to create invoice.");
     } finally {
@@ -92,7 +98,10 @@ export function BillingPanel({ entitlement, orders }: BillingPanelProps) {
   };
 
   return (
-    <main id="main-content" className="mx-auto min-h-screen w-full max-w-5xl px-4 py-8 text-zinc-100 sm:px-6">
+    <main
+      id="main-content"
+      className="mx-auto min-h-screen w-full max-w-5xl px-4 py-8 text-zinc-100 sm:px-6"
+    >
       <header className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
         <button
           type="button"
@@ -108,7 +117,9 @@ export function BillingPanel({ entitlement, orders }: BillingPanelProps) {
 
       <section className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-400">Pay / Extend license</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-400">
+            Pay / Extend license
+          </h2>
           <button
             type="button"
             onClick={() => setInfoOpen((current) => !current)}
@@ -148,13 +159,18 @@ export function BillingPanel({ entitlement, orders }: BillingPanelProps) {
       </section>
 
       <section className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-400">Order history</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-400">
+          Order history
+        </h2>
         {orders.length === 0 ? (
           <p className="mt-2 text-sm text-zinc-500">No billing orders yet.</p>
         ) : (
           <ul className="mt-2 space-y-1.5 text-xs text-zinc-300">
             {orders.map((order) => (
-              <li key={order.id} className="rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-2">
+              <li
+                key={order.id}
+                className="rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-2"
+              >
                 <p className="font-mono text-zinc-100 break-all">{order.id}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-zinc-400">
                   <span>{order.planCode}</span>
@@ -165,8 +181,14 @@ export function BillingPanel({ entitlement, orders }: BillingPanelProps) {
                     {order.amount} {order.currency}
                   </span>
                 </div>
-                <p className="mt-1 text-zinc-500">Created: {new Date(order.createdAt).toLocaleString()}</p>
-                {order.paidAt ? <p className="mt-0.5 text-zinc-500">Paid: {new Date(order.paidAt).toLocaleString()}</p> : null}
+                <p className="mt-1 text-zinc-500">
+                  Created: {new Date(order.createdAt).toLocaleString()}
+                </p>
+                {order.paidAt ? (
+                  <p className="mt-0.5 text-zinc-500">
+                    Paid: {new Date(order.paidAt).toLocaleString()}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>

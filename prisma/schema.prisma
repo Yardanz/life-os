@@ -462,11 +462,33 @@ model BillingOrder {
   paidAt            DateTime?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
+  payment           BillingPayment?
   events            BillingPaymentEvent[]
   entitlements      Entitlement[]
 
+  @@unique([provider, providerInvoiceId])
   @@index([userId, createdAt])
   @@index([status, createdAt])
+}
+
+model BillingPayment {
+  id                String       @id @default(cuid())
+  orderId           String       @unique
+  order             BillingOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider          String       @default("NOWPAYMENTS")
+  providerPaymentId String?
+  providerInvoiceId String?
+  payCurrency       String?
+  priceAmount       Decimal?     @db.Decimal(18, 2)
+  actuallyPaid      Decimal?     @db.Decimal(18, 8)
+  status            String       @default("CREATED")
+  rawPayload        Json?
+  confirmedAt       DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@unique([provider, providerPaymentId])
+  @@index([providerInvoiceId])
 }
 
 model BillingPaymentEvent {
@@ -479,6 +501,7 @@ model BillingPaymentEvent {
   payload          Json
   receivedAt       DateTime    @default(now())
 
+  @@unique([orderId, providerEventId])
   @@index([orderId, receivedAt])
 }
 

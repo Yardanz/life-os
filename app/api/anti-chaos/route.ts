@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { antiChaosPayloadSchema } from "@/lib/api/schemas";
 import { todayUtcDateOnly, toUtcDateOnly } from "@/lib/api/date";
 import { ApiError, errorResponse } from "@/lib/api/errors";
-import { ensureUserWithPlan, isPro, requireProPlan } from "@/lib/api/plan";
+import { ensureUserWithPlan, isPro } from "@/lib/api/plan";
+import { ensureLiveDemoData } from "@/lib/demo/seedLiveDemo";
+import { isDemoModeRequest, LIVE_DEMO_USER_ID } from "@/lib/demoMode";
 import { prisma } from "@/lib/prisma";
 import {
   decodeAntiChaosActionItems,
@@ -34,9 +37,30 @@ function serializePlan(plan: {
 
 export async function POST(request: Request) {
   try {
-    const body = antiChaosPayloadSchema.parse(await request.json());
+    const session = await auth();
+    const sessionUserId = session?.user?.id;
+    if (!sessionUserId) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const demoMode = isDemoModeRequest(request);
+    const effectiveUserId = demoMode ? LIVE_DEMO_USER_ID : sessionUserId;
+    if (demoMode) {
+      await ensureLiveDemoData();
+    }
+
+    const rawBody = (await request.json()) as Record<string, unknown>;
+    const body = antiChaosPayloadSchema.parse({
+      ...rawBody,
+      userId: effectiveUserId,
+    });
     const day = body.date ? toUtcDateOnly(body.date) : todayUtcDateOnly();
-    const user = await requireProPlan(body.userId, request);
+    const user = await ensureUserWithPlan(effectiveUserId, request, { allowCreate: false });
+    if (!isPro(user)) {
+      throw new ApiError(403, "Operator capability required.", {
+        code: "OPERATOR_REQUIRED",
+        message: "Pay for Operator License to access Anti-Chaos protocol.",
+      });
+    }
     const plan = await generateAntiChaosPlan(day, user.id);
 
     return NextResponse.json(
@@ -56,12 +80,20 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
+    const session = await auth();
+    const sessionUserId = session?.user?.id;
+    if (!sessionUserId) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const demoMode = isDemoModeRequest(request);
+    const effectiveUserId = demoMode ? LIVE_DEMO_USER_ID : sessionUserId;
+
     const { searchParams } = new URL(request.url);
     const parsed = antiChaosPayloadSchema.parse({
-      userId: searchParams.get("userId") ?? "demo-user",
+      userId: effectiveUserId,
       date: searchParams.get("date") ?? undefined,
     });
-    const user = await ensureUserWithPlan(parsed.userId, request);
+    const user = await ensureUserWithPlan(parsed.userId, request, { allowCreate: false });
     if (!isPro(user)) {
       throw new ApiError(403, "Operator capability required.", {
         code: "OPERATOR_REQUIRED",

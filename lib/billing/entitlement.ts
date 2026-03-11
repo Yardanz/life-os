@@ -18,15 +18,22 @@ export async function getUserEntitlement(userId: string) {
 }
 
 export function isOperatorActive(
-  entitlement: {
-    key: EntitlementKey;
-    status: EntitlementStatus;
-    expiresAt: Date;
-  } | null | undefined,
+  entitlement:
+    | {
+        key: EntitlementKey;
+        status: EntitlementStatus;
+        expiresAt: Date;
+      }
+    | null
+    | undefined,
   now: Date = new Date()
 ): boolean {
   if (!entitlement) return false;
-  return entitlement.key === EntitlementKey.OPERATOR_LICENSE && entitlement.status === EntitlementStatus.ACTIVE && now < entitlement.expiresAt;
+  return (
+    entitlement.key === EntitlementKey.OPERATOR_LICENSE &&
+    entitlement.status === EntitlementStatus.ACTIVE &&
+    now < entitlement.expiresAt
+  );
 }
 
 export async function requireOperator(userId: string) {
@@ -40,8 +47,15 @@ export async function requireOperator(userId: string) {
   return entitlement;
 }
 
+export async function hasActiveOperatorLicense(
+  userId: string,
+  now: Date = new Date()
+): Promise<boolean> {
+  const entitlement = await getUserEntitlement(userId);
+  return isOperatorActive(entitlement, now);
+}
+
 export function computeExpiresAt(now: Date, periodDays: number): Date {
   const safeDays = Math.max(1, Math.floor(periodDays));
   return new Date(now.getTime() + safeDays * 24 * 60 * 60 * 1000);
 }
-

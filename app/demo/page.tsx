@@ -9,6 +9,7 @@ import { PublicNavLinks } from "@/components/public/PublicNavLinks";
 import { GlossaryModal } from "@/components/ui/GlossaryModal";
 import { SystemReportModal } from "@/components/ui/SystemReportModal";
 import { t } from "@/lib/i18n";
+import { getSupportEmail } from "@/lib/supportContact";
 import { buildSystemReport } from "@/lib/systemReport";
 
 type ScenarioKey = "baseline" | "high_load" | "recovery";
@@ -410,7 +411,7 @@ export default function DemoPage() {
         open={reportModalOpen}
         onClose={() => setReportModalOpen(false)}
         reportText={reportText}
-        supportEmail={process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? null}
+        supportEmail={getSupportEmail()}
       />
       <GlossaryModal open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
     </LifeOSBackground>

@@ -6,7 +6,13 @@ import { prisma } from "@/lib/prisma";
 export type Plan = UserPlan;
 export const PLAN_OVERRIDE_COOKIE = "lifeos_plan_override";
 
-export function isPro(user: { operatorActive?: boolean; plan?: UserPlan | string } | null | undefined): boolean {
+type EnsureUserWithPlanOptions = {
+  allowCreate?: boolean;
+};
+
+export function isPro(
+  user: { operatorActive?: boolean; plan?: UserPlan | string } | null | undefined
+): boolean {
   const normalized = typeof user?.plan === "string" ? user.plan.toUpperCase() : user?.plan;
   return normalized === UserPlan.PRO || Boolean(user?.operatorActive);
 }
@@ -37,11 +43,23 @@ function resolvePlanOverride(request?: Request): UserPlan | null {
   return null;
 }
 
-export async function ensureUserWithPlan(userId: string, request?: Request) {
+export async function ensureUserWithPlan(
+  userId: string,
+  request?: Request,
+  options?: EnsureUserWithPlanOptions
+) {
+  const allowCreate = options?.allowCreate ?? true;
   const overridePlan = resolvePlanOverride(request);
   const existing = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, role: true, plan: true, adaptiveRiskOffset: true, adaptiveRecoveryOffset: true },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      plan: true,
+      adaptiveRiskOffset: true,
+      adaptiveRecoveryOffset: true,
+    },
   });
 
   if (existing) {
@@ -62,6 +80,10 @@ export async function ensureUserWithPlan(userId: string, request?: Request) {
     };
   }
 
+  if (!allowCreate) {
+    throw new ApiError(404, "User not found.");
+  }
+
   const fallbackEmail = `${userId.replace(/[^a-zA-Z0-9-_]/g, "_")}@local.lifeos`;
   const created = await prisma.user.create({
     data: {
@@ -69,7 +91,14 @@ export async function ensureUserWithPlan(userId: string, request?: Request) {
       email: fallbackEmail,
       plan: UserPlan.FREE,
     },
-    select: { id: true, email: true, role: true, plan: true, adaptiveRiskOffset: true, adaptiveRecoveryOffset: true },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      plan: true,
+      adaptiveRiskOffset: true,
+      adaptiveRecoveryOffset: true,
+    },
   });
 
   const operatorActive = overridePlan === UserPlan.PRO;

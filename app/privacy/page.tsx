@@ -1,13 +1,10 @@
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { BackNavButton } from "@/components/ui/BackNavButton";
 import { PublicFooter } from "@/components/public/PublicFooter";
-
-function resolveSupportEmail(): string {
-  return process.env.SUPPORT_EMAIL ?? process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@lifeos.local";
-}
+import { getSupportEmail } from "@/lib/supportContact";
 
 export default function PrivacyPage() {
-  const supportEmail = resolveSupportEmail();
+  const supportEmail = getSupportEmail();
   const mailtoHref = `mailto:${supportEmail}?subject=${encodeURIComponent("LIFE OS Privacy Request")}`;
 
   return (
