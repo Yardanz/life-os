@@ -42,24 +42,31 @@ export function BackNavButton({
       return;
     }
 
-    if (window.history.length > 1) {
+    const referrer = document.referrer;
+    let internalReferrerTarget: string | null = null;
+    if (referrer) {
+      try {
+        const refUrl = new URL(referrer);
+        const current = window.location;
+        const sameOrigin = refUrl.origin === current.origin;
+        const samePathAndQuery = refUrl.pathname === current.pathname && refUrl.search === current.search && refUrl.hash === current.hash;
+        if (sameOrigin && !samePathAndQuery) {
+          internalReferrerTarget = `${refUrl.pathname}${refUrl.search}${refUrl.hash}`;
+        }
+      } catch {
+        internalReferrerTarget = null;
+      }
+    }
+
+    if (window.history.length > 1 && internalReferrerTarget) {
       prepareBackNavigationScrollReset();
       router.back();
       return;
     }
 
-    const referrer = document.referrer;
-    if (referrer) {
-      try {
-        const refUrl = new URL(referrer);
-        const currentOrigin = window.location.origin;
-        if (refUrl.origin === currentOrigin && refUrl.pathname !== window.location.pathname) {
-          router.push(`${refUrl.pathname}${refUrl.search}${refUrl.hash}`);
-          return;
-        }
-      } catch {
-        // no-op
-      }
+    if (internalReferrerTarget) {
+      router.push(internalReferrerTarget);
+      return;
     }
 
     router.push(fallbackHref);

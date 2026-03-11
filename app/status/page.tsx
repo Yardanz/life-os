@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
@@ -76,7 +76,7 @@ export default function StatusPage() {
     <LifeOSBackground>
       <main id="main-content" className="mx-auto min-h-screen w-full max-w-5xl overflow-x-hidden px-4 py-10 text-zinc-100 sm:px-6 sm:py-12">
         <header className="mb-8 sm:mb-10">
-          <BackNavButton fallbackHref="/" label="← Back to Home" variant="text" navigation="href" />
+          <BackNavButton fallbackHref="/" label={"\u2190 Back to Home"} variant="text" navigation="href" />
           <div className="mt-4 space-y-2">
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">LIFE OS STATUS</p>
             <h1 className="text-3xl font-semibold text-zinc-100 sm:text-4xl">System Status</h1>
@@ -133,3 +133,5 @@ export default function StatusPage() {
     </LifeOSBackground>
   );
 }
+
+

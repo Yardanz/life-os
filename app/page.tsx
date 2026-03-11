@@ -37,7 +37,7 @@ export default async function LandingPage() {
               <>
                 <Link
                   href="/app/live"
-                  className="min-h-10 rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-cyan-100"
+                  className="min-h-10 rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-cyan-100 transition-colors hover:border-cyan-300/70 hover:bg-cyan-500/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
                 >
                   Open /app
                 </Link>
@@ -49,7 +49,7 @@ export default async function LandingPage() {
                 >
                   <button
                     type="submit"
-                    className="min-h-10 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-200"
+                    className="min-h-10 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
                   >
                     Sign out
                   </button>
@@ -58,7 +58,7 @@ export default async function LandingPage() {
             ) : (
               <Link
                 href={controlRoomAuthHref}
-                className="min-h-10 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-200"
+                className="min-h-10 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
               >
                 Sign in
               </Link>

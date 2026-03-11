@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+﻿import { auth } from "@/auth";
 import { LandingAuthOverlayController } from "@/components/auth/LandingAuthOverlayController";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { PublicFooter } from "@/components/public/PublicFooter";
@@ -145,7 +145,7 @@ export default async function PricingPage() {
         <header className="mb-8 sm:mb-10">
           <BackNavButton
             fallbackHref="/"
-            label="← Back to Home"
+            label={"\u2190 Back to Home"}
             variant="text"
             navigation="href"
           />
@@ -232,3 +232,5 @@ export default async function PricingPage() {
     </LifeOSBackground>
   );
 }
+
+
