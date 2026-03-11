@@ -3,7 +3,7 @@ import { ApiError } from "@/lib/api/errors";
 import { BILLING_PROVIDER, PLANS } from "@/lib/billing/config";
 import { computeExpiresAt, isOperatorActive } from "@/lib/billing/entitlement";
 import { createNowPaymentsInvoiceSession } from "@/lib/billing/nowpayments";
-import { getPublicAppUrl } from "@/lib/env";
+import { getPublicAppUrl } from "@/lib/env.server";
 import { prisma } from "@/lib/prisma";
 
 type PlanRecord = {

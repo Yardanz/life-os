@@ -143,7 +143,12 @@ export default async function PricingPage() {
     <LifeOSBackground>
       <main className="pricing-main mx-auto min-h-screen w-full max-w-6xl px-4 py-10 text-zinc-100 sm:px-6 sm:py-12">
         <header className="mb-8 sm:mb-10">
-          <BackNavButton className="inline-flex items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40" />
+          <BackNavButton
+            fallbackHref="/"
+            label="← Back to Home"
+            variant="text"
+            navigation="href"
+          />
           <div className="mt-4 space-y-2">
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">CAPABILITY SPECIFICATION</p>
             <h1 className="text-3xl font-semibold text-zinc-100 sm:text-4xl">Observer Mode vs Operator License</h1>
@@ -204,6 +209,21 @@ export default async function PricingPage() {
             isAuthenticated={Boolean(session)}
             returnHref={returnHref}
           />
+        </section>
+
+        <section className="light-lift-card mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5">
+          <div className="space-y-1.5">
+            <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Payment processing</p>
+            <h2 className="text-base font-semibold text-zinc-100">Checkout and access activation</h2>
+          </div>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-zinc-300">
+            <li>Payments are processed through hosted checkout.</li>
+            <li>Prices are displayed in USD.</li>
+            <li>Final charged amount may vary depending on selected payment method and applicable provider or network fees.</li>
+            <li>Operator License access is activated only after confirmed payment verification.</li>
+            <li>Return page or browser redirect alone does not grant access.</li>
+            <li>Failed, expired, or unconfirmed payments do not activate paid access.</li>
+          </ul>
         </section>
 
         <PublicFooter className="mt-8" />

@@ -16,7 +16,6 @@ Scope: RC packaging and verification pass (no engine math changes).
 - `PUBLIC_APP_ACCESS`: [ ] true [ ] false
 - `PUBLIC_OAUTH_ENABLED`: [ ] true [ ] false
 - Notes:
-  - `/app/admin/*` remains admin-only regardless of flags.
   - Public routes remain public: `/demo`, `/release`, `/operator`, `/support`, `/privacy`, `/terms`, `/status`.
 
 ## Smoke Test Results
@@ -52,12 +51,6 @@ Based on `docs/smoke-test.md`.
 - [ ] PASS [ ] FAIL Cache policy is no-store/no-cache for snapshot routes.
 - [ ] PASS [ ] FAIL Revoked/expired tokens return generic unavailable response.
 - [ ] PASS [ ] FAIL Snapshot payload excludes PII and raw check-in fields.
-
-## Admin Health Console Verification
-- [ ] PASS [ ] FAIL `/app/admin/health` is accessible only to admin users.
-- [ ] PASS [ ] FAIL Non-admin access returns 404 (no disclosure).
-- [ ] PASS [ ] FAIL Metrics window selector and refresh function correctly.
-- [ ] PASS [ ] FAIL Error export endpoint works for admin (`/api/admin/health/errors`).
 
 ## Issues Found
 - None recorded in this RC pass.

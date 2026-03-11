@@ -26,7 +26,6 @@ import { TrajectoryCard } from "@/components/control-room/v2/TrajectoryCard";
 import { SystemEvolutionStrip } from "@/components/control-room/v2/SystemEvolutionStrip";
 import { UnlockNotice } from "@/components/control-room/v2/UnlockNotice";
 import { LockedSectionCard } from "@/components/control-room/v2/LockedSectionCard";
-import { DebugSystemPanel } from "@/components/control-room/v2/DebugSystemPanel";
 import { PartialDiagnosticsSection } from "@/components/control-room/v2/PartialDiagnosticsSection";
 import { FullDiagnosticsSection } from "@/components/control-room/v2/FullDiagnosticsSection";
 import { SystemEvolutionModal, type EvolutionDay, type EvolutionModalMode, type EvolutionTrack } from "@/components/control-room/v2/SystemEvolutionModal";
@@ -48,20 +47,6 @@ type SetupStatePayload = {
   calibrationCheckinsNeeded: number;
   confidence: number;
   confidencePct: number;
-};
-
-type DebugSimulationMode =
-  | "debug-random-simulation"
-  | "debug-burnout-spiral-simulation"
-  | "debug-recovery-rebound-simulation";
-
-type DevSimulationWindow = {
-  userId: string;
-  startDate: string;
-  endDate: string;
-  days: number;
-  generatedCount: number;
-  mode: DebugSimulationMode;
 };
 
 type ProjectionPoint = {
@@ -150,16 +135,8 @@ type ProjectionCustomResponse =
       };
     }
   | { ok: false; error?: string; message?: string };
-
-type UiPlanMode = "live" | "free" | "pro";
-const UI_PLAN_STORAGE_KEY = "lifeos.controlroom.uiPlanMode";
 const CHECKIN_STORAGE_PREFIX = "lifeos.checkin";
 const CONTROL_ROOM_INIT_MIN_MS = 420;
-
-function parseUiPlanMode(value: string | null): UiPlanMode | null {
-  if (value === "live" || value === "free" || value === "pro") return value;
-  return null;
-}
 
 function clearCheckinLocalCache(): void {
   if (typeof window === "undefined") return;
@@ -207,12 +184,9 @@ function EmptyOperationalSectionCard({ title, onRecordFirstCheckin }: EmptyOpera
 
 export function ControlRoomV2({
   userId = "demo-user",
-  userEmail = null,
-  authProvider = null,
   demoMode = false,
   appVersion = "dev",
   supportEmail = null,
-  controlRoomDebugEnabled = false,
   initialSelectedDate,
   latestCheckinDate = null,
   initialActiveProtocol = null,
@@ -221,8 +195,6 @@ export function ControlRoomV2({
   const pathname = usePathname();
   const router = useRouter();
   const selectedDate = parseISODateParam(searchParams.get("date")) ?? initialSelectedDate ?? getLocalISODate();
-  const debugQueryEnabled = process.env.NODE_ENV === "development" && searchParams.get("debug") === "1";
-  const showDebugPanel = (controlRoomDebugEnabled || debugQueryEnabled) && Boolean(userId);
   const [tzOffsetMinutes, setTzOffsetMinutes] = useState<number>(DEFAULT_TZ_OFFSET_MINUTES);
   const todayDayKey = useMemo(() => getDayKeyAtOffset(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
 
@@ -256,7 +228,6 @@ export function ControlRoomV2({
   const [evolutionModalUnlocked, setEvolutionModalUnlocked] = useState(false);
   const [evolutionModalMode, setEvolutionModalMode] = useState<EvolutionModalMode>("manual");
   const [evolutionModalIncludeOperatorSection, setEvolutionModalIncludeOperatorSection] = useState(false);
-  const [uiPlanMode, setUiPlanMode] = useState<UiPlanMode>("live");
   const [previousMetrics, setPreviousMetrics] = useState<{
     date: string;
     lifeScore: number;
@@ -266,16 +237,6 @@ export function ControlRoomV2({
   } | null>(null);
   const [projectionLoading, setProjectionLoading] = useState(false);
   const [projectionError, setProjectionError] = useState<string | null>(null);
-  const [devSimLoading, setDevSimLoading] = useState(false);
-  const [devSimInFlightScenario, setDevSimInFlightScenario] = useState<
-    "random" | "burnout_spiral" | "recovery_rebound" | null
-  >(null);
-  const [devSimNotice, setDevSimNotice] = useState<string | null>(null);
-  const [devSimError, setDevSimError] = useState<string | null>(null);
-  const [devSimWindow, setDevSimWindow] = useState<DevSimulationWindow | null>(null);
-  const [devExportLoading, setDevExportLoading] = useState(false);
-  const [devExportNotice, setDevExportNotice] = useState<string | null>(null);
-  const [devExportError, setDevExportError] = useState<string | null>(null);
   const [projection30d, setProjection30d] = useState<Projection30d | null>(null);
   const [envelope72h, setEnvelope72h] = useState<RiskEnvelopePoint[] | null>(null);
   const [impact72h, setImpact72h] = useState<EnvelopeImpactPayload | null>(null);
@@ -296,7 +257,6 @@ export function ControlRoomV2({
   const pendingMilestoneCheckRef = useRef<number | null>(null);
   const autoOpenedMilestonesRef = useRef<Set<EvolutionDay>>(new Set());
   const welcomeSeenPersistingRef = useRef(false);
-  const [latestUnlockedMilestone, setLatestUnlockedMilestone] = useState<EvolutionDay | null>(null);
 
   useEffect(() => {
     const detectedOffset = -new Date().getTimezoneOffset();
@@ -304,28 +264,6 @@ export function ControlRoomV2({
       setTzOffsetMinutes(Math.trunc(detectedOffset));
     }
   }, []);
-
-  useEffect(() => {
-    const fromQuery = parseUiPlanMode(searchParams.get("debugPlan"));
-    if (fromQuery) {
-      setUiPlanMode(fromQuery);
-      try {
-        window.localStorage.setItem(UI_PLAN_STORAGE_KEY, fromQuery);
-      } catch {
-        // no-op
-      }
-      return;
-    }
-
-    try {
-      const fromStorage = parseUiPlanMode(window.localStorage.getItem(UI_PLAN_STORAGE_KEY));
-      if (fromStorage) {
-        setUiPlanMode(fromStorage);
-      }
-    } catch {
-      // no-op
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     const id = window.setInterval(() => setTimerNow(new Date()), 60_000);
@@ -544,165 +482,7 @@ export function ControlRoomV2({
     [pathname, router, searchParams]
   );
 
-  const handleUiPlanModeChange = useCallback(
-    (mode: UiPlanMode) => {
-      setUiPlanMode(mode);
-      try {
-        window.localStorage.setItem(UI_PLAN_STORAGE_KEY, mode);
-      } catch {
-        // no-op
-      }
-
-      const nextParams = new URLSearchParams(searchParams.toString());
-      if (mode === "live") {
-        nextParams.delete("debugPlan");
-      } else {
-        nextParams.set("debugPlan", mode);
-      }
-      const nextQuery = nextParams.toString();
-      router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname);
-    },
-    [pathname, router, searchParams]
-  );
-
   const isDemoReadOnly = demoMode || Boolean(data?.demoMode);
-
-  const runDebugSimulation = useCallback(async (scenario: "random" | "burnout_spiral" | "recovery_rebound") => {
-    if (!showDebugPanel || isDemoReadOnly) return;
-    const simulationUserId = data?.userId ?? userId;
-    if (!simulationUserId) return;
-
-    try {
-      setDevSimLoading(true);
-      setDevSimInFlightScenario(scenario);
-      setDevSimError(null);
-      setDevSimNotice(null);
-      setDevExportError(null);
-      setDevExportNotice(null);
-      const response = await fetch("/api/dev/simulate-30d", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          userId: simulationUserId,
-          endDateISO: selectedDate,
-          days: 30,
-          seed: `${selectedDate}:${scenario}`,
-          overwrite: true,
-          mode: "simulate",
-          scenario,
-        }),
-      });
-      const payload = (await response.json()) as
-        | {
-            ok: true;
-            data: {
-              userId: string;
-              generatedCount: number;
-              startDate: string;
-              endDate: string;
-              days: number;
-              scenario?: "random" | "burnout_spiral" | "recovery_rebound";
-            };
-          }
-        | { ok: false; error?: string; message?: string };
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.ok ? "Failed to simulate check-ins." : payload.error ?? payload.message ?? "Failed to simulate check-ins.");
-      }
-      const scenarioFromResponse = payload.data.scenario ?? scenario;
-      const scenarioLabel =
-        scenarioFromResponse === "burnout_spiral"
-          ? "Burnout spiral scenario"
-          : scenarioFromResponse === "recovery_rebound"
-            ? "Recovery rebound scenario"
-            : "30-day random simulation";
-      setDevSimNotice(`${scenarioLabel}: ${payload.data.generatedCount} days (${payload.data.startDate} -> ${payload.data.endDate}).`);
-      setDevSimWindow({
-        userId: payload.data.userId,
-        startDate: payload.data.startDate,
-        endDate: payload.data.endDate,
-        days: payload.data.days,
-        generatedCount: payload.data.generatedCount,
-        mode:
-          scenarioFromResponse === "burnout_spiral"
-            ? "debug-burnout-spiral-simulation"
-            : scenarioFromResponse === "recovery_rebound"
-              ? "debug-recovery-rebound-simulation"
-              : "debug-random-simulation",
-      });
-      setReloadKey((value) => value + 1);
-    } catch (simulationError) {
-      setDevSimError(simulationError instanceof Error ? simulationError.message : "Failed to simulate check-ins.");
-      setDevSimWindow(null);
-    } finally {
-      setDevSimLoading(false);
-      setDevSimInFlightScenario(null);
-    }
-  }, [data?.userId, isDemoReadOnly, selectedDate, showDebugPanel, userId]);
-
-  const handleSimulate30Days = useCallback(async () => {
-    await runDebugSimulation("random");
-  }, [runDebugSimulation]);
-
-  const handleSimulateBurnoutSpiral = useCallback(async () => {
-    await runDebugSimulation("burnout_spiral");
-  }, [runDebugSimulation]);
-
-  const handleSimulateRecoveryRebound = useCallback(async () => {
-    await runDebugSimulation("recovery_rebound");
-  }, [runDebugSimulation]);
-
-  const handleExportSimulationLog = useCallback(async () => {
-    if (!showDebugPanel || isDemoReadOnly || !devSimWindow) return;
-
-    try {
-      setDevExportLoading(true);
-      setDevExportError(null);
-      setDevExportNotice(null);
-      const response = await fetch("/api/dev/simulate-30d/export", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          userId: devSimWindow.userId,
-          startDateISO: devSimWindow.startDate,
-          endDateISO: devSimWindow.endDate,
-          days: devSimWindow.days,
-          mode: devSimWindow.mode,
-        }),
-      });
-      const payload = (await response.json()) as
-        | {
-            ok: true;
-            data: {
-              meta: {
-                filename: string;
-              };
-            };
-          }
-        | { ok: false; error?: string; message?: string };
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.ok ? "Failed to export simulation log." : payload.error ?? payload.message ?? "Failed to export simulation log.");
-      }
-
-      const serialized = JSON.stringify(payload.data, null, 2);
-      const blob = new Blob([serialized], { type: "application/json;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      try {
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = payload.data.meta.filename;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-      } finally {
-        URL.revokeObjectURL(url);
-      }
-      setDevExportNotice("Simulation log exported.");
-    } catch (exportError) {
-      setDevExportError(exportError instanceof Error ? exportError.message : "Failed to export simulation log.");
-    } finally {
-      setDevExportLoading(false);
-    }
-  }, [devSimWindow, isDemoReadOnly, showDebugPanel]);
 
   const completeWelcomeFlow = useCallback(
     async (afterComplete?: () => void) => {
@@ -762,7 +542,6 @@ export function ControlRoomV2({
   const handleCheckInSaved = (result: CheckinSaveResult) => {
     const unlockedDay = result.newlyUnlockedMilestone;
     if (unlockedDay) {
-      setLatestUnlockedMilestone(unlockedDay);
       if (!autoOpenedMilestonesRef.current.has(unlockedDay)) {
         autoOpenedMilestonesRef.current.add(unlockedDay);
         if (unlockedDay === 7) {
@@ -820,11 +599,7 @@ export function ControlRoomV2({
     await signOut({ callbackUrl: "/" });
   };
 
-  const effectivePlan = useMemo<"FREE" | "PRO">(() => {
-    if (uiPlanMode === "free") return "FREE";
-    if (uiPlanMode === "pro") return "PRO";
-    return data?.plan ?? "FREE";
-  }, [data?.plan, uiPlanMode]);
+  const effectivePlan = useMemo<"FREE" | "PRO">(() => data?.plan ?? "FREE", [data?.plan]);
   const operatorPlanEnabled = effectivePlan === "PRO";
   const confidencePctRaw = (setupState?.confidence ?? data?.modelConfidence.confidence ?? 0) * 100;
   const confidencePct = Math.max(0, Math.min(100, Math.round(confidencePctRaw)));
@@ -1085,11 +860,6 @@ export function ControlRoomV2({
       : `${String(Math.floor(Math.ceil(nextCheckinAvailability.msRemaining / 60_000) / 60)).padStart(2, "0")}:${String(
           Math.ceil(nextCheckinAvailability.msRemaining / 60_000) % 60
         ).padStart(2, "0")}`;
-  const countdownLabel = nextCheckinAvailability.availableNow
-    ? "Check-in available now"
-    : remainingWindowLabel
-      ? `Next check-in in ${remainingWindowLabel}`
-      : "—";
   const nextWindowStatus = nextCheckinAvailability.availableNow
     ? "Check-in available now"
     : remainingWindowLabel
@@ -1100,14 +870,6 @@ export function ControlRoomV2({
   const nextActionDescription = "New check-ins update the current operational day.";
   const actionModeLabel = checkinMode === "edit" ? "UPDATE" : "RECORD";
   const nextActionStatusItems = [`Operational date: ${operationalDate}`, `Action mode: ${actionModeLabel}`, nextWindowStatus];
-  const latestUnlockedMilestoneLabel: "—" | "Day 3" | "Day 5" | "Day 7" =
-    latestUnlockedMilestone === 3
-      ? "Day 3"
-      : latestUnlockedMilestone === 5
-        ? "Day 5"
-        : latestUnlockedMilestone === 7
-          ? "Day 7"
-          : "—";
   const openAntiChaosControls = () => {
     if (typeof document === "undefined") return;
     const target = document.getElementById("advanced-trajectory-controls");
@@ -1263,58 +1025,6 @@ export function ControlRoomV2({
                 collapsible
                 onOpenTutorial={handleOpenTutorial}
                 onStageClick={handleStageClick}
-              />
-            ) : null}
-            {showDebugPanel ? (
-              <DebugSystemPanel
-                userId={userId}
-                userEmail={userEmail}
-                authProvider={authProvider}
-                planLabel="—"
-                totalCheckins={totalCheckins}
-                onboardingProgress={`${Math.max(0, Math.min(7, onboardingProgressCheckins))}/7`}
-                currentEvolutionStage={`Day ${evolution.currentDay}`}
-                nextUnlockDay={evolution.nextUnlockDay ? `Day ${evolution.nextUnlockDay}` : "All unlocked"}
-                unlocked={evolution.unlocked}
-                lastCheckinTimestamp={lastCheckinAt ? lastCheckinAt.toISOString() : "—"}
-                nextAllowedTimestamp={nextCheckinAvailability.nextAvailableAt ? nextCheckinAvailability.nextAvailableAt.toISOString() : "—"}
-                canCheckInNow={nextCheckinAvailability.availableNow}
-                countdownLabel={countdownLabel}
-                operationalDate={operationalDate}
-                hasCheckinForOperationalDate={hasCheckinForOperationalDate}
-                checkinMode={checkinMode}
-                newlyUnlockedMilestone={latestUnlockedMilestoneLabel}
-                lifeScore="—"
-                guardrailState="—"
-                protocolState={activeProtocol?.guardrailState ?? "—"}
-                authority="—"
-                confidence={`${confidencePct}%`}
-                calibrationStage={calibrationStage.stage}
-                integrity="—"
-                selectedDate={selectedDate}
-                renderedDataDate="—"
-                onPrevDay={() => setDateInUrl(addDaysISO(selectedDate, -1))}
-                onToday={() => setDateInUrl(todayDayKey)}
-                onNextDay={() => setDateInUrl(addDaysISO(selectedDate, 1))}
-                onOpenCheckinForSelectedDay={() => openCheckInModal(selectedDate)}
-                uiPlanMode={uiPlanMode}
-                onUiPlanModeChange={handleUiPlanModeChange}
-                canSimulate30Days={!isDemoReadOnly && !devSimLoading}
-                simulate30DaysLoading={devSimLoading && devSimInFlightScenario === "random"}
-                simulate30DaysNotice={devSimNotice}
-                simulate30DaysError={devSimError}
-                onSimulate30Days={() => void handleSimulate30Days()}
-                canSimulateBurnoutSpiral={!isDemoReadOnly && !devSimLoading}
-                simulateBurnoutSpiralLoading={devSimLoading && devSimInFlightScenario === "burnout_spiral"}
-                onSimulateBurnoutSpiral={() => void handleSimulateBurnoutSpiral()}
-                canSimulateRecoveryRebound={!isDemoReadOnly && !devSimLoading}
-                simulateRecoveryReboundLoading={devSimLoading && devSimInFlightScenario === "recovery_rebound"}
-                onSimulateRecoveryRebound={() => void handleSimulateRecoveryRebound()}
-                canExportSimulationLog={!isDemoReadOnly && Boolean(devSimWindow)}
-                exportSimulationLogLoading={devExportLoading}
-                exportSimulationLogNotice={devExportNotice}
-                exportSimulationLogError={devExportError}
-                onExportSimulationLog={() => void handleExportSimulationLog()}
               />
             ) : null}
           </div>
@@ -1496,59 +1206,6 @@ export function ControlRoomV2({
               collapsible
               onOpenTutorial={handleOpenTutorial}
               onStageClick={handleStageClick}
-            />
-          ) : null}
-
-          {showDebugPanel ? (
-            <DebugSystemPanel
-              userId={userId}
-              userEmail={userEmail}
-              authProvider={authProvider}
-              planLabel={`${data.plan === "PRO" ? "Operator" : "Observer"} (UI: ${effectivePlan === "PRO" ? "Operator" : "Observer"})`}
-              totalCheckins={totalCheckins}
-              onboardingProgress={`${Math.max(0, Math.min(7, onboardingProgressCheckins))}/7`}
-              currentEvolutionStage={`Day ${evolution.currentDay}`}
-              nextUnlockDay={evolution.nextUnlockDay ? `Day ${evolution.nextUnlockDay}` : "All unlocked"}
-              unlocked={evolution.unlocked}
-              lastCheckinTimestamp={lastCheckinAt ? lastCheckinAt.toISOString() : "—"}
-              nextAllowedTimestamp={nextCheckinAvailability.nextAvailableAt ? nextCheckinAvailability.nextAvailableAt.toISOString() : "—"}
-              canCheckInNow={nextCheckinAvailability.availableNow}
-              countdownLabel={countdownLabel}
-              operationalDate={operationalDate}
-              hasCheckinForOperationalDate={hasCheckinForOperationalDate}
-              checkinMode={checkinMode}
-              newlyUnlockedMilestone={latestUnlockedMilestoneLabel}
-              lifeScore={typeof data.snapshot.lifeScore === "number" ? data.snapshot.lifeScore.toFixed(1) : "—"}
-              guardrailState={data.guardrail.label ?? "—"}
-              protocolState={activeProtocol?.guardrailState ?? "—"}
-              authority={authorityStatus.status ?? "—"}
-              confidence={`${confidencePct}%`}
-              calibrationStage={calibrationStage.stage}
-              integrity={data.integrity ? `${data.integrity.state} (${Math.round(data.integrity.score)}%)` : "—"}
-              selectedDate={selectedDate}
-              renderedDataDate={data.date}
-              onPrevDay={() => setDateInUrl(addDaysISO(selectedDate, -1))}
-              onToday={() => setDateInUrl(todayDayKey)}
-              onNextDay={() => setDateInUrl(addDaysISO(selectedDate, 1))}
-              onOpenCheckinForSelectedDay={() => openCheckInModal(selectedDate)}
-              uiPlanMode={uiPlanMode}
-              onUiPlanModeChange={handleUiPlanModeChange}
-              canSimulate30Days={!isDemoReadOnly && !devSimLoading}
-              simulate30DaysLoading={devSimLoading && devSimInFlightScenario === "random"}
-              simulate30DaysNotice={devSimNotice}
-              simulate30DaysError={devSimError}
-              onSimulate30Days={() => void handleSimulate30Days()}
-              canSimulateBurnoutSpiral={!isDemoReadOnly && !devSimLoading}
-              simulateBurnoutSpiralLoading={devSimLoading && devSimInFlightScenario === "burnout_spiral"}
-              onSimulateBurnoutSpiral={() => void handleSimulateBurnoutSpiral()}
-              canSimulateRecoveryRebound={!isDemoReadOnly && !devSimLoading}
-              simulateRecoveryReboundLoading={devSimLoading && devSimInFlightScenario === "recovery_rebound"}
-              onSimulateRecoveryRebound={() => void handleSimulateRecoveryRebound()}
-              canExportSimulationLog={!isDemoReadOnly && Boolean(devSimWindow)}
-              exportSimulationLogLoading={devExportLoading}
-              exportSimulationLogNotice={devExportNotice}
-              exportSimulationLogError={devExportError}
-              onExportSimulationLog={() => void handleExportSimulationLog()}
             />
           ) : null}
         </div>

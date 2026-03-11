@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { type BillingOrderStatus } from "@prisma/client";
 import { ApiError } from "@/lib/api/errors";
 import { BILLING_PROVIDER } from "@/lib/billing/config";
-import { getNowPaymentsApiKey, getNowPaymentsBaseUrl } from "@/lib/env";
+import { getNowPaymentsApiKey, getNowPaymentsBaseUrl } from "@/lib/env.server";
 
 type CreateNowPaymentsInvoiceInput = {
   orderId: string;

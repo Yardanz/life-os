@@ -281,7 +281,7 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section className="light-lift-card mt-20 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+        <section id="pricing" className="light-lift-card mt-20 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-amber-300/80">Extension Layer</p>
           <h2 className="mt-2 text-xl font-semibold text-zinc-100">Forward Simulation Engine (Operator License)</h2>
           <p className="mt-3 text-sm text-zinc-300">The base system operates in real-time.</p>

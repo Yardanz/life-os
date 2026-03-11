@@ -84,10 +84,6 @@ const dict = {
     next: "Next",
     free: "Free",
     pro: "Pro",
-    devPlan: "DEV PLAN",
-    overwrite: "overwrite",
-    sim30d: "Sim 30d",
-    clear30d: "Clear 30d",
     processing: "Processing...",
     why: "Why?",
     stabilizeSystem: "Stabilize System",
@@ -156,7 +152,8 @@ const dict = {
 
 type DictKey = keyof (typeof dict)["en"];
 
-export function t(key: string, _locale: Locale = "en"): string {
+export function t(key: string, locale: Locale = "en"): string {
   const safeKey = key as DictKey;
-  return dict.en[safeKey] ?? key;
+  const language = locale in dict ? locale : "en";
+  return dict[language][safeKey] ?? key;
 }

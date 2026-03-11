@@ -1,4 +1,4 @@
-import { isPublicAppAccessEnabled, isSoftLaunchModeEnabled } from "@/lib/env";
+import { isPublicAppAccessEnabled, isSoftLaunchModeEnabled } from "@/lib/env.server";
 
 type SoftLaunchUser = {
   email?: string | null;

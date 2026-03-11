@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { ensureLiveDemoData } from "@/lib/demo/seedLiveDemo";
 import { isDemoModeRequest, LIVE_DEMO_USER_ID } from "@/lib/demoMode";
+import { generateErrorId, logSystemError } from "@/lib/obs";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -16,10 +17,12 @@ type SystemEvent = {
 };
 
 export async function GET(request: Request) {
+  let logUserId: string | null = null;
   try {
     const demoMode = isDemoModeRequest(request);
     const session = await auth();
     const userId = demoMode ? LIVE_DEMO_USER_ID : session?.user?.id;
+    logUserId = userId ?? null;
     if (!userId) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
@@ -89,7 +92,16 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ ok: true, data: events }, { status: 200, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to load system events.";
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    const errorId = generateErrorId();
+    logSystemError({
+      errorId,
+      scope: "api",
+      name: "api.events.GET",
+      message: error instanceof Error ? error.message : "Failed to load system events.",
+      userId: logUserId,
+      path: "/api/events",
+      meta: { method: "GET" },
+    });
+    return NextResponse.json({ ok: false, error: "SYSTEM_FAULT", errorId }, { status: 500 });
   }
 }

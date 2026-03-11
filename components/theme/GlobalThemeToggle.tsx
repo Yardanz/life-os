@@ -1,29 +1,17 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { DEFAULT_THEME, THEME_STORAGE_KEY, type AppTheme } from "@/lib/theme";
+import { useMemo, useSyncExternalStore } from "react";
+import { applyTheme, DEFAULT_THEME, readDocumentTheme, subscribeToThemeChanges, type AppTheme } from "@/lib/theme";
 
-function applyTheme(theme: AppTheme) {
-  const root = document.documentElement;
-  root.dataset.theme = theme;
-  root.style.colorScheme = theme;
-
-  try {
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  } catch {
-    // Ignore storage errors (private mode / blocked storage).
-  }
-}
+const subscribeHydration = () => () => {};
 
 export function GlobalThemeToggle() {
-  const [theme, setTheme] = useState<AppTheme>(DEFAULT_THEME);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const rootTheme = document.documentElement.dataset.theme === "light" ? "light" : "dark";
-    setTheme(rootTheme);
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    subscribeHydration,
+    () => true,
+    () => false
+  );
+  const theme = useSyncExternalStore(subscribeToThemeChanges, readDocumentTheme, () => DEFAULT_THEME);
 
   const nextTheme = useMemo<AppTheme>(() => (theme === "dark" ? "light" : "dark"), [theme]);
 
@@ -35,7 +23,6 @@ export function GlobalThemeToggle() {
     <button
       type="button"
       onClick={() => {
-        setTheme(nextTheme);
         applyTheme(nextTheme);
       }}
       aria-label={`Switch to ${nextTheme} theme`}

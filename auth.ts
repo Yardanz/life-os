@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { UserPlan } from "@prisma/client";
 import authConfig from "@/auth.config";
-import { assertEnv } from "@/lib/env";
+import { assertEnv } from "@/lib/env.server";
 import { prisma } from "@/lib/prisma";
 
 function normalizeAuthUrl(rawValue: string): string {
@@ -34,7 +34,7 @@ if (process.env.NODE_ENV !== "production") {
   const rawBaseUrl = process.env.AUTH_URL?.trim() || "http://localhost:3000";
   try {
     const callbackUrl = new URL("/api/auth/callback/google", normalizeAuthUrl(rawBaseUrl)).toString();
-    console.info(`[auth][dev] Google callback URL: ${callbackUrl}`);
+    console.warn(`[auth][dev] Google callback URL: ${callbackUrl}`);
   } catch {
     console.warn(`[auth][dev] Invalid AUTH_URL value: ${rawBaseUrl}`);
   }

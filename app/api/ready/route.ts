@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertEnv } from "@/lib/env";
+import { assertEnv } from "@/lib/env.server";
 import { generateErrorId, logSystemError } from "@/lib/obs";
 
 export const runtime = "nodejs";

@@ -88,7 +88,6 @@ type DecisionBudget72h = {
 type ProjectionScenarioChartProps = {
   locale: Locale;
   userId: string;
-  isAdmin?: boolean;
   readOnly?: boolean;
   projection: Projection30d;
   custom?: ProjectionPoint[] | null;
@@ -170,7 +169,6 @@ function getPrimaryBudgetViolation(args: {
 export function ProjectionScenarioChart({
   locale,
   userId,
-  isAdmin = false,
   readOnly = false,
   projection,
   custom,
@@ -197,18 +195,7 @@ export function ProjectionScenarioChart({
 
   const hasData = projection.baseline.length > 0 || projection.stabilization.length > 0 || projection.overload.length > 0;
   const hasEnvelopeData = (envelope72h?.length ?? 0) > 0;
-  const baselineRisk0 = envelope72h?.[0]?.riskBaseline;
-  const baselineBreachKind =
-    guardrail.level === 2
-      ? "LOCKDOWN"
-      : typeof baselineRisk0 !== "number" || !Number.isFinite(baselineRisk0)
-        ? "INVALID"
-        : baselineRisk0 >= 80
-          ? "CRITICAL"
-          : baselineRisk0 >= 65
-            ? "CAUTION"
-            : "NONE";
-  const debugSafeWindow = decisionBudget72h?.safeWindowHours;
+  const safeWindowHours = decisionBudget72h?.safeWindowHours;
   const budgetLoadLimit =
     typeof decisionBudget72h?.allowableLoadDelta === "number" && Number.isFinite(decisionBudget72h.allowableLoadDelta)
       ? decisionBudget72h.allowableLoadDelta
@@ -913,11 +900,6 @@ export function ProjectionScenarioChart({
             </details>
             <section className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-3">
               <h4 className="text-sm font-medium text-zinc-200">Decision Budget (72h)</h4>
-              {process.env.NODE_ENV !== "production" && isAdmin ? (
-                <p className="mt-1 text-[11px] text-zinc-500">
-                  debug: safeWindowHours={formatBudgetValue(debugSafeWindow)} breachKind={baselineBreachKind}
-                </p>
-              ) : null}
               <div className="mt-3 grid gap-2 text-xs md:grid-cols-2">
                 <div className="rounded-md border border-zinc-800 bg-zinc-950/80 px-3 py-2 text-zinc-200">
                   Safe Load Margin: {formatBudgetValue(decisionBudget72h?.allowableLoadDelta)}
@@ -930,8 +912,8 @@ export function ProjectionScenarioChart({
                 </div>
                 <div className="rounded-md border border-zinc-800 bg-zinc-950/80 px-3 py-2 text-zinc-200">
                   Time to Caution:{" "}
-                  {typeof debugSafeWindow === "number" && Number.isFinite(debugSafeWindow)
-                    ? `${Math.max(0, Math.round(debugSafeWindow))}h`
+                  {typeof safeWindowHours === "number" && Number.isFinite(safeWindowHours)
+                    ? `${Math.max(0, Math.round(safeWindowHours))}h`
                     : "-"}
                 </div>
               </div>

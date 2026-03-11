@@ -52,7 +52,7 @@ import type {
   ControlRoomExecutiveSummary,
   ControlRoomPatterns,
 } from "@/lib/control-room/types";
-import { addDaysISO, getLocalISODate, parseISODateParam } from "@/lib/date/localDate";
+import { getLocalISODate, parseISODateParam } from "@/lib/date/localDate";
 import { DEFAULT_TZ_OFFSET_MINUTES, getDayKeyAtOffset } from "@/lib/date/dayKey";
 import { useViewMode } from "@/hooks/useViewMode";
 
@@ -395,7 +395,6 @@ export type ControlRoomDashboardProps = {
   demoMode?: boolean;
   appVersion?: string;
   supportEmail?: string | null;
-  controlRoomDebugEnabled?: boolean;
   initialSelectedDate?: string;
   latestCheckinDate?: string | null;
   initialActiveProtocol?: ProtocolRunRecord | null;
@@ -442,13 +441,6 @@ export function ControlRoomDashboard({
     deepWorkPctDelta: 0,
     stressDelta: 0,
   });
-  const [devPlanOverride, setDevPlanOverride] = useState<"free" | "pro" | null>(null);
-  const [devPlanSaving, setDevPlanSaving] = useState(false);
-  const [devSimSeed, setDevSimSeed] = useState("");
-  const [devSimOverwrite, setDevSimOverwrite] = useState(true);
-  const [devSimLoading, setDevSimLoading] = useState(false);
-  const [devSimNotice, setDevSimNotice] = useState<string | null>(null);
-  const [devSimError, setDevSimError] = useState<string | null>(null);
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [checkInModalDate, setCheckInModalDate] = useState<string | null>(null);
   const [setupState, setSetupState] = useState<SetupStatePayload | null>(null);
@@ -486,7 +478,6 @@ export function ControlRoomDashboard({
   const [stateExplanationOpen, setStateExplanationOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
-  const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [tzOffsetMinutes, setTzOffsetMinutes] = useState<number>(DEFAULT_TZ_OFFSET_MINUTES);
   const locale: Locale = "en";
   const { mode: viewMode, setMode: setViewMode } = useViewMode();
@@ -499,12 +490,6 @@ export function ControlRoomDashboard({
   const guardrailTransitionTimeoutRef = useRef<number | null>(null);
   const [recentGuardrailTransition, setRecentGuardrailTransition] = useState(false);
   const selectedDate = parseISODateParam(searchParams.get("date")) ?? initialSelectedDate ?? getLocalISODate();
-  const showDevDateNavigator =
-    process.env.NODE_ENV === "development" &&
-    process.env.NEXT_PUBLIC_SHOW_DEV_CONTROLS === "true" &&
-    Boolean(data?.isAdmin);
-  const isDevelopment = process.env.NODE_ENV === "development";
-  const canSeeAdminDebug = isDevelopment && Boolean(data?.isAdmin);
   const isSimplifiedView = viewMode === "simplified";
   const isDemoReadOnly = demoMode || Boolean(data?.demoMode);
   const todayDayKey = useMemo(() => getDayKeyAtOffset(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
@@ -947,80 +932,6 @@ export function ControlRoomDashboard({
 
     void load();
   }, [selectedDate, reloadKey, userId, latestCheckinDate, tzOffsetMinutes]);
-
-  useEffect(() => {
-    if (!showDevDateNavigator) return;
-    const loadDevPlan = async () => {
-      try {
-        const response = await fetch("/api/dev/get-plan", { cache: "no-store" });
-        const payload = (await response.json()) as {
-          ok: boolean;
-          data?: { plan: "free" | "pro" | null };
-        };
-        if (response.ok && payload.ok) {
-          setDevPlanOverride(payload.data?.plan ?? null);
-        }
-      } catch {
-        setDevPlanOverride(null);
-      }
-    };
-    void loadDevPlan();
-  }, [showDevDateNavigator, reloadKey]);
-
-  const setDevPlan = async (plan: "free" | "pro") => {
-    if (!showDevDateNavigator) return;
-    try {
-      setDevPlanSaving(true);
-      const response = await fetch("/api/dev/set-plan", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ plan }),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to set dev plan override.");
-      }
-      setDevPlanOverride(plan);
-      setReloadKey((value) => value + 1);
-      router.refresh();
-    } catch (setPlanError) {
-      const message = setPlanError instanceof Error ? setPlanError.message : "Failed to set dev plan override.";
-      setError(message);
-    } finally {
-      setDevPlanSaving(false);
-    }
-  };
-
-  const runDevSimulation = async (mode: "simulate" | "clear") => {
-    if (!showDevDateNavigator || !data) return;
-    try {
-      setDevSimLoading(true);
-      setDevSimError(null);
-      setDevSimNotice(null);
-      const response = await fetch("/api/dev/simulate-30d", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: data.userId,
-          endDateISO: selectedDate,
-          days: 30,
-          seed: devSimSeed.trim().length > 0 ? devSimSeed.trim() : `${selectedDate}`,
-          overwrite: devSimOverwrite,
-          mode,
-        }),
-      });
-      const payload = (await response.json()) as { ok?: boolean; data?: { mode?: string }; message?: string; error?: string };
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.message ?? payload.error ?? "Failed to run dev simulation.");
-      }
-      setDevSimNotice(mode === "simulate" ? "Simulated 30 days and recalculated snapshots." : "Cleared 30-day generated window.");
-      setReloadKey((current) => current + 1);
-    } catch (simError) {
-      const message = simError instanceof Error ? simError.message : "Failed to run dev simulation.";
-      setDevSimError(message);
-    } finally {
-      setDevSimLoading(false);
-    }
-  };
 
   const generateOperationalProtocol = async () => {
     try {
@@ -2186,102 +2097,6 @@ export function ControlRoomDashboard({
                     Home
                   </span>
                 </Link>
-                {showDevDateNavigator && (
-                  <div className="mt-3 space-y-2 text-xs">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setDateInUrl(addDaysISO(selectedDate, -1))}
-                        className="rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-zinc-200 hover:border-zinc-500"
-                      >
-                        {t("prev", locale)}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDateInUrl(getLocalISODate())}
-                        className="rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-zinc-200 hover:border-zinc-500"
-                      >
-                        {t("today", locale)}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDateInUrl(addDaysISO(selectedDate, 1))}
-                        className="rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-zinc-200 hover:border-zinc-500"
-                      >
-                        {t("next", locale)}
-                      </button>
-                      <span className="ml-2 rounded-md border border-zinc-700 bg-zinc-950 px-2.5 py-1 text-zinc-300">
-                        {selectedDate}
-                      </span>
-                      <div className="ml-2 inline-flex rounded-md border border-zinc-700 bg-zinc-950 p-0.5">
-                        <button
-                          type="button"
-                          disabled={devPlanSaving}
-                          onClick={() => void setDevPlan("free")}
-                          className={`rounded px-2 py-1 text-xs transition ${
-                            (devPlanOverride ?? data.plan.toLowerCase()) === "free"
-                              ? "bg-zinc-700 text-zinc-100"
-                              : "text-zinc-300 hover:bg-zinc-800"
-                          }`}
-                        >
-                          {t("free", locale)}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={devPlanSaving}
-                          onClick={() => void setDevPlan("pro")}
-                          className={`rounded px-2 py-1 text-xs transition ${
-                            (devPlanOverride ?? data.plan.toLowerCase()) === "pro"
-                              ? "bg-emerald-700 text-emerald-100"
-                              : "text-zinc-300 hover:bg-zinc-800"
-                          }`}
-                        >
-                          {t("pro", locale)}
-                        </button>
-                      </div>
-                      <span className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-amber-200">
-                        Dev: plan override ({(devPlanOverride ?? data.plan.toLowerCase()).toUpperCase()})
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <input
-                        value={devSimSeed}
-                        onChange={(event) => setDevSimSeed(event.target.value)}
-                        placeholder={`seed (default: ${selectedDate})`}
-                        className="h-8 w-56 rounded-md border border-zinc-700 bg-zinc-950 px-2 text-xs text-zinc-200 placeholder:text-zinc-500"
-                      />
-                      <label className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-950 px-2.5 py-1 text-zinc-300">
-                        <input
-                          type="checkbox"
-                          checked={devSimOverwrite}
-                          onChange={(event) => setDevSimOverwrite(event.target.checked)}
-                          className="h-3.5 w-3.5 accent-zinc-300"
-                        />
-                        {t("overwrite", locale)}
-                      </label>
-                      <button
-                        type="button"
-                        disabled={devSimLoading}
-                        onClick={() => void runDevSimulation("simulate")}
-                        className="rounded-md border border-cyan-700/70 bg-cyan-500/10 px-2.5 py-1 text-cyan-200 hover:border-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {t("sim30d", locale)}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={devSimLoading}
-                        onClick={() => void runDevSimulation("clear")}
-                        className="rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-zinc-300 hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {t("clear30d", locale)}
-                      </button>
-                      {devSimLoading ? <span className="text-zinc-500">{t("processing", locale)}</span> : null}
-                      {devSimNotice ? <span className="text-emerald-300">{devSimNotice}</span> : null}
-                      {devSimError ? <span className="text-rose-300">{devSimError}</span> : null}
-                    </div>
-                  </div>
-                )}
                 <h1 id="state-overview" className="mt-2 text-5xl font-semibold leading-none text-zinc-100">
                   {isZeroDataState ? "—" : data.snapshot.lifeScore.toFixed(1)}
                 </h1>
@@ -2526,14 +2341,6 @@ export function ControlRoomDashboard({
                   >
                     Settings
                   </Link>
-                  {data?.isAdmin ? (
-                    <Link
-                      href="/app/admin/health"
-                      className="min-h-10 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-100 transition hover:border-cyan-400/60"
-                    >
-                      Health Console
-                    </Link>
-                  ) : null}
                   <button
                     type="button"
                     onClick={() => setGlossaryOpen(true)}
@@ -2569,25 +2376,6 @@ export function ControlRoomDashboard({
                     Baseline calibration: {setupState.calibrationCheckinsDone}/{setupState.calibrationCheckinsNeeded} •{" "}
                     {setupState.confidencePct}% confidence. Projections are conservative until baseline stabilizes.
                   </p>
-                ) : null}
-                {canSeeAdminDebug ? (
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowDebugInfo((current) => !current)}
-                      className="rounded-md border border-zinc-700 bg-zinc-950 px-2.5 py-1 text-[11px] text-zinc-300 transition hover:border-zinc-500"
-                    >
-                      {showDebugInfo ? "Hide debug info" : "Show debug info"}
-                    </button>
-                  </div>
-                ) : null}
-                {canSeeAdminDebug && showDebugInfo ? (
-                  <div className="rounded-md border border-zinc-800 bg-zinc-950/70 px-2.5 py-2 text-[11px] text-zinc-400">
-                    <p>guardrail: {data.guardrail.label}</p>
-                    <p>confidence: {systemConfidence.pct}%</p>
-                    <p>last check-in dayKey: {data.checkinSnapshot?.date ?? "n/a"}</p>
-                    <p>active protocol id: {activeProtocol?.id ?? "none"}</p>
-                  </div>
                 ) : null}
                 {!checkinUpdateNotice && resetNotice ? <p className="text-[11px] text-emerald-300/90">{resetNotice}</p> : null}
                 {!checkinUpdateNotice && !resetNotice && stabilizeNotice ? (
@@ -3301,7 +3089,6 @@ export function ControlRoomDashboard({
                       <ProjectionScenarioChart
                         locale={locale}
                         userId={data.userId}
-                        isAdmin={data.isAdmin}
                         readOnly={isDemoReadOnly || isCalibratingStage}
                         projection={projection30d}
                         custom={customProjection}

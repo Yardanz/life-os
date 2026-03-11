@@ -11,7 +11,7 @@ import {
   verifyNowPaymentsSignature,
 } from "@/lib/billing/nowpayments";
 import { grantEntitlementFromPaidOrder } from "@/lib/billing/service";
-import { getNowPaymentsIpnSecret } from "@/lib/env";
+import { getNowPaymentsIpnSecret } from "@/lib/env.server";
 import { generateErrorId, logSystemError } from "@/lib/obs";
 import { prisma } from "@/lib/prisma";
 

@@ -9,12 +9,12 @@ Operational release gate for LIFE OS.
 - [ ] Demo: controlled scenario run + reset works, no DB writes from `/demo` scenario runner.
 - [ ] `/app` gating: deployment flags behave correctly (restricted vs public access).
 - [ ] Smoke test: 100% PASS (`docs/smoke-test.md`).
-- [ ] Admin Health Console is accessible only to admin users.
+- [ ] No debug/admin tools are exposed in production.
 
 ## B) NO-GO Criteria (any is immediate no-go)
 - [ ] PII leak detected in snapshot payloads or logs.
 - [ ] Snapshot pages are cacheable or indexable.
-- [ ] Non-admin can access admin routes (`/app/admin/*`, admin APIs).
+- [ ] Any debug/admin endpoint is reachable in production.
 - [ ] Demo scenario path writes to DB.
 - [ ] Account deletion leaves orphaned records or fails silently.
 - [ ] Hard crash on empty/partial state in `/app`.
@@ -36,4 +36,3 @@ Emergency containment profile:
 - Decision timestamp:
 - Decision owner:
 - Notes:
-

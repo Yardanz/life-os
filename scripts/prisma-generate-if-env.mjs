@@ -8,7 +8,7 @@ if (!databaseUrl) {
     console.error("DATABASE_URL missing at build; Prisma types cannot be generated");
     process.exit(1);
   }
-  console.log("Skipping prisma generate (DATABASE_URL not set)");
+  console.warn("Skipping prisma generate (DATABASE_URL not set)");
   process.exit(0);
 }
 

@@ -43,7 +43,7 @@ async function main() {
       "SELECT current_database() AS db, current_schema() AS schema, inet_server_addr()::text AS server_ip, inet_server_port() AS port"
     );
     const row = result.rows[0] ?? {};
-    console.log(
+    console.warn(
       JSON.stringify(
         {
           ok: true,

@@ -12,7 +12,7 @@ export default function SupportPage() {
     <LifeOSBackground>
       <main id="main-content" className="mx-auto min-h-screen w-full max-w-5xl overflow-x-hidden px-4 py-10 text-zinc-100 sm:px-6 sm:py-12">
         <header className="mb-8 sm:mb-10">
-          <BackNavButton className="inline-flex items-center rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40" />
+          <BackNavButton fallbackHref="/" label="← Back to Home" variant="text" navigation="href" />
           <div className="mt-4 space-y-2">
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">SUPPORT</p>
             <h1 className="text-3xl font-semibold text-zinc-100 sm:text-4xl">Operational support channel</h1>
@@ -34,12 +34,41 @@ export default function SupportPage() {
         </section>
 
         <section className="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Billing support</p>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+            Contact support for payment, access activation, refund requests, and account-related billing issues.
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            Include Order ID, payment timestamp, and transaction reference for faster verification.
+          </p>
+        </section>
+
+        <section className="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
           <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Response policy</p>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-zinc-300">
             <li>Scope: platform operation, account, access, and billing incidents.</li>
             <li>No coaching, clinical guidance, or personal behavior counseling.</li>
-            <li>For security reports, use the dedicated security contact path.</li>
+            <li>Initial response target: within 2 business days.</li>
+            <li>Complex investigations may require additional time depending on provider/network verification.</li>
           </ul>
+        </section>
+
+        <section className="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Security and abuse reporting</p>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+            Security-related and abuse reports can be sent to{" "}
+            <a href={mailtoHref} className="text-zinc-200 underline decoration-zinc-600 underline-offset-2 transition hover:text-zinc-100">
+              {supportEmail}
+            </a>
+            .
+          </p>
+        </section>
+
+        <section className="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Contact and legal references</p>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+            Legal and service terms are available in the linked documents below.
+          </p>
         </section>
 
         <section className="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
@@ -58,6 +87,16 @@ export default function SupportPage() {
             <li>
               <Link href="/privacy" className="text-zinc-200 underline decoration-zinc-600 underline-offset-2 transition hover:text-zinc-100">
                 Privacy
+              </Link>
+            </li>
+            <li>
+              <Link href="/refund" className="text-zinc-200 underline decoration-zinc-600 underline-offset-2 transition hover:text-zinc-100">
+                Refund Policy
+              </Link>
+            </li>
+            <li>
+              <Link href="/terms" className="text-zinc-200 underline decoration-zinc-600 underline-offset-2 transition hover:text-zinc-100">
+                Terms
               </Link>
             </li>
           </ul>

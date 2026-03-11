@@ -1,3 +1,5 @@
+import "server-only";
+
 type EnvValidationResult = {
   ok: true;
 };
@@ -26,10 +28,6 @@ export function isPublicAppAccessEnabled(): boolean {
 
 export function isPublicOAuthEnabledServer(): boolean {
   return parseBoolean(process.env.PUBLIC_OAUTH_ENABLED, true);
-}
-
-export function isPublicOAuthEnabledClient(): boolean {
-  return parseBoolean(process.env.NEXT_PUBLIC_PUBLIC_OAUTH_ENABLED, true);
 }
 
 export function getNowPaymentsApiKey(): string | null {

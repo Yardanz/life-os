@@ -14,9 +14,8 @@ Use this file as a pass/fail gate before deploy.
 ## B) Auth & Permission Checks
 - [ ] PASS [ ] FAIL Unauthenticated access to `/app` routes is blocked.
 - [ ] PASS [ ] FAIL Auth callback URLs resolve correctly for `/`, `/pricing`, `/status`, `/app`.
-- [ ] PASS [ ] FAIL Admin-only controls are hidden from non-admin users.
-- [ ] PASS [ ] FAIL Admin-only endpoints return not found/unauthorized for non-admin users.
-- [ ] PASS [ ] FAIL Dev plan override endpoints are admin + dev-tools gated.
+- [ ] PASS [ ] FAIL No debug/admin controls are exposed in production UI.
+- [ ] PASS [ ] FAIL No debug/admin endpoints are reachable in production.
 
 ## C) Demo / Snapshot Read-Only Verification
 - [ ] PASS [ ] FAIL `/demo` scenario runner is client-side only (no mutating API/server actions).
@@ -81,12 +80,7 @@ Use this file as a pass/fail gate before deploy.
 - [x] PASS [ ] FAIL Snapshot page is dynamic, noindex, and no-cache:
   - `app/s/[token]/page.tsx`
   - `next.config.ts` (`/s/:path*` headers)
-- [x] PASS [ ] FAIL Admin gating exists for internal tools/endpoints:
-  - `lib/authz.ts`
-  - `app/api/dev/*`
-  - `app/api/telemetry/route.ts`
-- [x] PASS [ ] FAIL Telemetry endpoint is dev-only and admin-gated:
-  - `app/api/telemetry/route.ts`
+- [x] PASS [ ] FAIL No dev/admin API routes remain in `app/api`.
 - [x] PASS [ ] FAIL No token logging found in audited server/client logs (`console.*` grep over `app`, `lib`, `components`).
 
 ## Fixes Applied

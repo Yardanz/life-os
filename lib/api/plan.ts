@@ -4,7 +4,6 @@ import { getUserEntitlement, isOperatorActive } from "@/lib/billing/entitlement"
 import { prisma } from "@/lib/prisma";
 
 export type Plan = UserPlan;
-export const PLAN_OVERRIDE_COOKIE = "lifeos_plan_override";
 
 type EnsureUserWithPlanOptions = {
   allowCreate?: boolean;
@@ -17,39 +16,12 @@ export function isPro(
   return normalized === UserPlan.PRO || Boolean(user?.operatorActive);
 }
 
-function isDevPlanOverrideEnabled(): boolean {
-  return process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_DEV_TOOLS === "true";
-}
-
-function parseCookieValue(cookieHeader: string, name: string): string | null {
-  const parts = cookieHeader.split(";").map((part) => part.trim());
-  const pair = parts.find((part) => part.startsWith(`${name}=`));
-  if (!pair) return null;
-  const raw = pair.slice(name.length + 1);
-  try {
-    return decodeURIComponent(raw);
-  } catch {
-    return raw;
-  }
-}
-
-function resolvePlanOverride(request?: Request): UserPlan | null {
-  if (!request || !isDevPlanOverrideEnabled()) return null;
-  const cookieHeader = request.headers.get("cookie");
-  if (!cookieHeader) return null;
-  const value = parseCookieValue(cookieHeader, PLAN_OVERRIDE_COOKIE);
-  if (value === "pro") return UserPlan.PRO;
-  if (value === "free") return UserPlan.FREE;
-  return null;
-}
-
 export async function ensureUserWithPlan(
   userId: string,
-  request?: Request,
+  _request?: Request,
   options?: EnsureUserWithPlanOptions
 ) {
   const allowCreate = options?.allowCreate ?? true;
-  const overridePlan = resolvePlanOverride(request);
   const existing = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -65,8 +37,8 @@ export async function ensureUserWithPlan(
   if (existing) {
     const entitlement = await getUserEntitlement(existing.id);
     const entitlementPlan = isOperatorActive(entitlement) ? UserPlan.PRO : UserPlan.FREE;
-    const resolvedPlan = overridePlan ?? (existing.plan === UserPlan.PRO ? UserPlan.PRO : entitlementPlan);
-    if (!overridePlan && resolvedPlan !== existing.plan && resolvedPlan === UserPlan.PRO) {
+    const resolvedPlan = existing.plan === UserPlan.PRO ? UserPlan.PRO : entitlementPlan;
+    if (resolvedPlan !== existing.plan && resolvedPlan === UserPlan.PRO) {
       await prisma.user.update({
         where: { id: existing.id },
         data: { plan: resolvedPlan },
@@ -101,10 +73,10 @@ export async function ensureUserWithPlan(
     },
   });
 
-  const operatorActive = overridePlan === UserPlan.PRO;
+  const operatorActive = false;
   return {
     ...created,
-    plan: operatorActive ? UserPlan.PRO : UserPlan.FREE,
+    plan: UserPlan.FREE,
     operatorActive,
   };
 }

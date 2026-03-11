@@ -39,13 +39,18 @@ function toRecord(counts: Map<string, number>): Record<string, number> {
   return out;
 }
 
+function shouldLogTelemetryCounts(): boolean {
+  if (process.env.TELEMETRY_LOG === "1") return true;
+  return process.env.NODE_ENV !== "production";
+}
+
 export function recordEvent(eventName: string): void {
   if (!eventName || !eventName.trim()) return;
   const bucket = ensureBucket();
   const current = bucket.counts.get(eventName) ?? 0;
   bucket.counts.set(eventName, current + 1);
 
-  if (!bucket.logged) {
+  if (!bucket.logged && shouldLogTelemetryCounts()) {
     bucket.logged = true;
     console.warn(`TELEMETRY dayKey=${bucket.dayKey} counts=${JSON.stringify(toRecord(bucket.counts))}`);
   }

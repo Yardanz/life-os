@@ -84,26 +84,6 @@ export const scenariosQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
 
-export const devSimulate30dPayloadSchema = z.object({
-  userId: z.string().min(1, "userId is required").default("demo-user"),
-  endDateISO: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "endDateISO must be YYYY-MM-DD"),
-  days: z.number().int().min(1).max(90).default(30),
-  seed: z.union([z.string(), z.number()]).optional(),
-  overwrite: z.boolean().default(false),
-  mode: z.enum(["simulate", "clear"]).default("simulate"),
-  scenario: z.enum(["random", "burnout_spiral", "recovery_rebound"]).default("random"),
-});
-
-export const devSimulationExportPayloadSchema = z.object({
-  userId: z.string().min(1, "userId is required"),
-  startDateISO: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "startDateISO must be YYYY-MM-DD"),
-  endDateISO: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "endDateISO must be YYYY-MM-DD"),
-  days: z.number().int().min(1).max(90).default(30),
-  mode: z
-    .enum(["debug-random-simulation", "debug-burnout-spiral-simulation", "debug-recovery-rebound-simulation"])
-    .default("debug-random-simulation"),
-});
-
 export type ControlRoomQuery = z.infer<typeof controlRoomQuerySchema>;
 export type PatternsQuery = z.infer<typeof patternsQuerySchema>;
 export type ConfidenceQuery = z.infer<typeof confidenceQuerySchema>;
@@ -113,5 +93,3 @@ export type AntiChaosProtocolPayload = z.infer<typeof antiChaosProtocolPayloadSc
 export type ProjectionCustomPayload = z.infer<typeof projectionCustomPayloadSchema>;
 export type ScenarioSavePayload = z.infer<typeof scenarioSavePayloadSchema>;
 export type ScenariosQuery = z.infer<typeof scenariosQuerySchema>;
-export type DevSimulate30dPayload = z.infer<typeof devSimulate30dPayloadSchema>;
-export type DevSimulationExportPayload = z.infer<typeof devSimulationExportPayloadSchema>;

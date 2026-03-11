@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Pool } from "pg";
-import { assertEnv } from "@/lib/env";
+import { assertEnv } from "@/lib/env.server";
 import { startTiming } from "@/lib/observability/timing";
 
 type PrismaSingleton = PrismaClient;

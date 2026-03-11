@@ -72,7 +72,6 @@ export default async function AppControlRoomPage({ searchParams }: AppControlRoo
   const initialSelectedDate = explicitDate ?? latestCheckinDate ?? getLocalISODate();
   const appVersion = process.env.VERSION ?? process.env.VERCEL_GIT_COMMIT_SHA ?? "dev";
   const supportEmail = getSupportEmail();
-  const controlRoomDebugEnabled = String(process.env.CONTROL_ROOM_DEBUG ?? "").toLowerCase() === "true";
   const initialActiveProtocol = activeProtocol
       ? {
         id: activeProtocol.id,
@@ -112,7 +111,6 @@ export default async function AppControlRoomPage({ searchParams }: AppControlRoo
           demoMode={demoMode}
           appVersion={appVersion}
           supportEmail={supportEmail}
-          controlRoomDebugEnabled={controlRoomDebugEnabled}
           initialSelectedDate={initialSelectedDate}
           latestCheckinDate={latestCheckinDate}
           initialActiveProtocol={initialActiveProtocol}

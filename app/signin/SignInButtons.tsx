@@ -2,7 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { isPublicOAuthEnabledClient } from "@/lib/env";
+import { isPublicOAuthEnabledClient } from "@/lib/env.public";
 
 type ProviderButton = {
   id: "google" | "github";

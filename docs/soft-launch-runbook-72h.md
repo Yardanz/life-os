@@ -20,7 +20,7 @@ Operational runbook for first 72 hours after release candidate deployment.
 ## B) Hour 0-6
 
 ### Monitor cadence
-- [ ] Check Internal Health Console every 30-60 min:
+- [ ] Check production metrics/logs every 30-60 min:
   - active users
   - check-ins volume
   - LOCKDOWN count
@@ -48,7 +48,7 @@ Operational runbook for first 72 hours after release candidate deployment.
 - [ ] Compare error counts vs first 6h baseline.
 - [ ] Review support tickets and group by root cause.
 - [ ] Confirm no PII exposure in snapshots/reports/logs.
-- [ ] Confirm admin routes remain admin-only.
+- [ ] Confirm no debug/admin routes are exposed.
 
 ### Triage categories
 - [ ] Functional defect
@@ -112,4 +112,3 @@ Containment flags:
 - [ ] Keep `PUBLIC_OAUTH_ENABLED` unchanged unless auth itself is impacted.
 Communication line:
 - "Data integrity checks are running. Access is temporarily constrained to prevent further impact."
-

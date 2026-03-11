@@ -4,7 +4,6 @@ import { auth } from "@/auth";
 import { LifeOSBackground } from "@/components/layout/LifeOSBackground";
 import { prisma } from "@/lib/prisma";
 import { SettingsPanel } from "@/app/app/settings/SettingsPanel";
-import { isAdmin } from "@/lib/authz";
 import { ensureUserWithPlan } from "@/lib/api/plan";
 
 export const dynamic = "force-dynamic";
@@ -30,8 +29,6 @@ export default async function SettingsPage() {
       where: { id: session.user.id },
       select: {
         plan: true,
-        role: true,
-        email: true,
         accounts: {
           select: { provider: true },
           take: 1,
@@ -42,24 +39,11 @@ export default async function SettingsPage() {
     ensureUserWithPlan(session.user.id),
   ]);
 
-  const debugPlan =
-    process.env.NODE_ENV !== "production"
-      ? {
-          userId: session.user.id,
-          email: user?.email ?? session.user.email ?? null,
-          dbPlan: user?.plan ?? "FREE",
-          sessionPlan: session.user.plan ?? null,
-          resolvedPlan: resolvedUser.plan,
-        }
-      : null;
-
   return (
     <LifeOSBackground>
       <SettingsPanel
         plan={resolvedUser.plan}
         providerLabel={mapProviderLabel(user?.accounts[0]?.provider)}
-        isAdmin={isAdmin({ role: user?.role, email: user?.email })}
-        debugPlan={debugPlan}
       />
     </LifeOSBackground>
   );

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { ModalShell } from "@/components/ui/ModalShell";
-import { isPublicOAuthEnabledClient } from "@/lib/env";
+import { isPublicOAuthEnabledClient } from "@/lib/env.public";
 
 type AuthModalProps = {
   open: boolean;

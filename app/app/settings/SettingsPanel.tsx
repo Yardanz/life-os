@@ -12,14 +12,6 @@ import { PlanBadge } from "@/components/ui/PlanBadge";
 type SettingsPanelProps = {
   plan: "FREE" | "PRO";
   providerLabel: "Google" | "GitHub" | "OAuth" | "Unknown";
-  isAdmin?: boolean;
-  debugPlan?: {
-    userId: string;
-    email: string | null;
-    dbPlan: "FREE" | "PRO";
-    sessionPlan: "FREE" | "PRO" | null;
-    resolvedPlan: "FREE" | "PRO";
-  } | null;
 };
 
 type SystemSnapshotRecord = {
@@ -30,7 +22,7 @@ type SystemSnapshotRecord = {
   revokedAt: string | null;
 };
 
-export function SettingsPanel({ plan, providerLabel, isAdmin = false, debugPlan = null }: SettingsPanelProps) {
+export function SettingsPanel({ plan, providerLabel }: SettingsPanelProps) {
   const router = useRouter();
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
@@ -225,6 +217,9 @@ export function SettingsPanel({ plan, providerLabel, isAdmin = false, debugPlan 
               <Link href="/privacy" className="min-h-10 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-200 transition hover:border-zinc-500">
                 Privacy
               </Link>
+              <Link href="/refund" className="min-h-10 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-200 transition hover:border-zinc-500">
+                Refund
+              </Link>
               <Link href="/terms" className="min-h-10 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-200 transition hover:border-zinc-500">
                 Terms
               </Link>
@@ -234,33 +229,6 @@ export function SettingsPanel({ plan, providerLabel, isAdmin = false, debugPlan 
             </div>
           </section>
         </div>
-
-        {isAdmin ? (
-          <section className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-400">Admin</h2>
-            <div className="mt-4 flex flex-wrap gap-2 text-sm">
-              <Link
-                href="/app/admin/health"
-                className="min-h-10 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-cyan-100 transition hover:border-cyan-400/60"
-              >
-                Internal Health Console
-              </Link>
-            </div>
-          </section>
-        ) : null}
-
-        {debugPlan ? (
-          <section className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-amber-200">Debug Plan Source</h2>
-            <div className="mt-2 space-y-1 text-xs text-zinc-300">
-              <p>User: {debugPlan.userId}</p>
-              <p>Email: {debugPlan.email ?? "unknown"}</p>
-              <p>DB plan: {debugPlan.dbPlan}</p>
-              <p>Session plan: {debugPlan.sessionPlan ?? "missing"}</p>
-              <p>Resolved plan: {debugPlan.resolvedPlan}</p>
-            </div>
-          </section>
-        ) : null}
 
         {snapshotsEnabled ? (
           <section className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">

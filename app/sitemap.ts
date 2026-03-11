@@ -8,7 +8,7 @@ function resolveSiteUrl(): string {
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = resolveSiteUrl();
   const now = new Date();
-  const paths = ["/", "/demo", "/pricing", "/release", "/operator", "/support", "/security", "/status", "/privacy", "/terms"];
+  const paths = ["/", "/demo", "/pricing", "/release", "/operator", "/support", "/security", "/status", "/privacy", "/refund", "/terms"];
 
   return paths.map((path) => ({
     url: `${baseUrl}${path}`,

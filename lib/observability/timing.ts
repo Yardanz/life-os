@@ -16,13 +16,13 @@ export function startTiming(label: string, meta?: TimingMeta) {
   const enabled = shouldLogTimings();
   const startedAt = Date.now();
   if (enabled) {
-    console.info(`[perf] start ${label}${formatMeta(meta)}`);
+    console.warn(`[perf] start ${label}${formatMeta(meta)}`);
   }
   return {
     end(extraMeta?: TimingMeta) {
       if (!enabled) return;
       const elapsedMs = Date.now() - startedAt;
-      console.info(`[perf] end ${label} durationMs=${elapsedMs}${formatMeta({ ...meta, ...extraMeta })}`);
+      console.warn(`[perf] end ${label} durationMs=${elapsedMs}${formatMeta({ ...meta, ...extraMeta })}`);
     },
   };
 }
