@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     siteName: "LIFE OS",
     images: [
       {
-        url: "/opengraph-image",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "LIFE OS - Operator System",
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: defaultTitle,
     description: defaultDescription,
-    images: ["/opengraph-image"],
+    images: ["/og-image.png"],
   },
 };
 
